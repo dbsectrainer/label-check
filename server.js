@@ -7,11 +7,17 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const LM = require("./matcher.js");
+const { createLimiter } = require("./ratelimit.js");
 
 const PORT = Number(process.env.PORT) || 3000;
 const KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+// Unset means same-origin only: no CORS headers are sent. Set it to the Pages URL for a split deployment.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "";
+const allow = createLimiter(
+  Number(process.env.RATE_LIMIT_PER_MIN) || 120,
+  60 * 1000,
+);
 const MAX_BODY = 15 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -21,13 +27,13 @@ const HEAD =
   "<style>body{margin:0}</style></head><body>";
 
 function send(res, status, type, body) {
-  res.writeHead(status, {
-    "content-type": type,
-    "cache-control": "no-store",
-    "access-control-allow-origin": ALLOWED_ORIGIN,
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
-  });
+  const headers = { "content-type": type, "cache-control": "no-store" };
+  if (ALLOWED_ORIGIN) {
+    headers["access-control-allow-origin"] = ALLOWED_ORIGIN;
+    headers["access-control-allow-methods"] = "GET, POST, OPTIONS";
+    headers["access-control-allow-headers"] = "content-type";
+  }
+  res.writeHead(status, headers);
   res.end(body);
 }
 
@@ -62,6 +68,15 @@ function parseJsonLoose(text) {
 }
 
 async function extract(req, res) {
+  // No proxy header is trusted here: this server is meant to be run directly.
+  if (!allow(req.socket.remoteAddress || "unknown")) {
+    return send(
+      res,
+      429,
+      "application/json",
+      JSON.stringify({ error: "Too many requests" }),
+    );
+  }
   if (!KEY)
     return send(
       res,

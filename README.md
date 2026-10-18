@@ -16,7 +16,7 @@ The project can be deployed two ways:
 
 1. **Full Vercel Deployment (Frontend + Serverless API)**
    - Import the repository into [Vercel](https://vercel.com).
-   - Set the Environment Variable: `ANTHROPIC_API_KEY` = `sk-ant-...` (optional: `ALLOWED_ORIGIN` for CORS).
+   - Set the Environment Variable: `ANTHROPIC_API_KEY` = `sk-ant-...` (required, or label reading returns 503; optional: `ALLOWED_ORIGIN` for a split deployment, `RATE_LIMIT_PER_MIN`).
    - Vercel automatically serves `index.html` statically and routes `/api/extract` to `api/extract.js`.
 
 2. **Split Deployment (GitHub Pages Frontend + Vercel/Node Backend)**
@@ -25,18 +25,19 @@ The project can be deployed two ways:
 
 ## Run it yourself locally
 
-Requires Node 18 or newer and an Anthropic API key. No npm install is needed; there are no dependencies.
+Requires Node 18 or newer (developed and tested on Node 26.12.0) and an Anthropic API key. No npm install is needed; there are no dependencies.
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 node server.js            # http://localhost:3000
-node matcher.test.js      # 21 tests for the matching rules
+npm test                  # 21 matching-rule tests + rate limiter tests
 ```
 
 Configuration via environment variables:
 
 - `ANTHROPIC_MODEL`: defaults to `claude-haiku-5-5` (Anthropic's fastest model tier for high-volume extraction).
-- `ALLOWED_ORIGIN`: defaults to `*` for CORS access.
+- `ALLOWED_ORIGIN`: unset by default, which means same-origin only (no CORS headers). Set it to your Pages URL for a split deployment.
+- `RATE_LIMIT_PER_MIN`: requests per client per minute to `/api/extract`, default `120` (a 300-label batch fits). Over the limit returns 429 and the page asks the user to wait.
 - `PORT`: defaults to `3000`.
 
 ## How it works
@@ -93,8 +94,10 @@ If the image is rated poor and something cannot be read, that item is marked **C
 - `index.html` main application page (UI logic, image downscaling, canvas sample generator)
 - `matcher.js` pure matching rules and extraction prompt (browser and Node)
 - `matcher.test.js` unit test suite (21 tests)
+- `ratelimit.js` / `ratelimit.test.js` per-client rate limiter used by both API entry points
 - `server.js` zero-dependency local Node server with `/api/extract` and CORS
 - `api/extract.js` Vercel serverless function for production API deployment
 - `config.js` environment configuration for GitHub Pages frontend
+- `.github/workflows/ci.yml` runs `npm test` on pushes and pull requests
 - `.github/workflows/pages.yml` GitHub Actions automated workflow for Pages
 - `vercel.json` Vercel deployment configuration

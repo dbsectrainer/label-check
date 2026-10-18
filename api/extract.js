@@ -1,16 +1,33 @@
 // Serverless function for Vercel deployment: POST /api/extract
 "use strict";
 const LM = require("../matcher.js");
+const { createLimiter } = require("../ratelimit.js");
 
 const KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+// Unset means same-origin only: no CORS headers are sent. Set it to the Pages URL for a split deployment.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "";
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const allow = createLimiter(
+  Number(process.env.RATE_LIMIT_PER_MIN) || 120,
+  60 * 1000,
+);
 
 function setCorsHeaders(res) {
+  if (!ALLOWED_ORIGIN) return;
   res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+// Vercel sets x-forwarded-for itself, so its first entry is the real client address.
+function clientKey(req) {
+  const xff = req.headers["x-forwarded-for"];
+  return (
+    (xff ? String(xff).split(",")[0].trim() : "") ||
+    (req.socket && req.socket.remoteAddress) ||
+    "unknown"
+  );
 }
 
 function parseJsonLoose(text) {
@@ -34,6 +51,10 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!allow(clientKey(req))) {
+    return res.status(429).json({ error: "Too many requests" });
   }
 
   if (!KEY) {
