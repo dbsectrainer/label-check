@@ -6,7 +6,7 @@ An agent adds a label image, enters (or imports) what the application says, and 
 
 ## Try it
 
-**Deployed Application:** Open the published URL to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version.
+**Deployed Application:** https://label-check-puce.vercel.app — open it to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version.
 
 The page opens with a generated sample label already loaded. Choose **Check label**, or use the sample picker to load a label with a known problem (title-case warning heading, wrong ABV, reworded warning). The **Batch** tab has an **Add the sample labels** button that runs all five at once.
 
