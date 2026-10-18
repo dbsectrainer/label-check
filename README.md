@@ -25,7 +25,7 @@ The project can be deployed two ways:
 
 ## Run it yourself locally
 
-Requires Node 18 or newer (developed and tested on Node 26.12.0) and an Anthropic API key. No npm install is needed; there are no dependencies.
+Requires Node 22.9 or newer (developed and tested on Node 26.12.0) and an Anthropic API key. `npm start` uses Node's `--env-file-if-exists` flag, which older versions lack. No npm install is needed; there are no dependencies.
 
 ```bash
 cp .env.example .env      # then put your key in .env
@@ -83,7 +83,7 @@ If the image is rated poor and something cannot be read, that item is marked **C
 ## Limitations and trade-offs
 
 - **Network.** The prototype depends on a hosted model, which Marcus said the agency network would block. A production version would need a model inside the agency's cloud boundary (for example one hosted in their Azure tenant). Only `extract()` in `index.html` and the endpoint in `server.js` would change; the matching code is independent of the model.
-- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping end-to-end latency within ~1.5–3 seconds per label.
+- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping uploads small. Elapsed time is shown for every check so the ~5 second target can be verified; timings depend on the model and network and have not been formally benchmarked.
 - **Bold detection is a visual judgment by the model** and can be wrong on small or stylized type. Uncertain cases go to review.
 - **Scope.** One label image per application (front label only). No beverage-type specific rules (for example wine appellations or beer exemptions), no check of the label against the full list of mandatory statements, no artwork-position or type-size rules.
 - **Image types.** JPG, PNG, WebP and GIF up to 20 MB (large images are downscaled automatically in the browser). iPhone HEIC photos must be shared as JPEG first.

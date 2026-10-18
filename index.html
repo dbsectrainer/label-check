@@ -1427,7 +1427,7 @@
       return out;
     }
 
-    function drawLabel(s) {
+    function drawLabel(s, fileName) {
       return new Promise(function (resolve) {
         var W = 900,
           H = 1280,
@@ -1507,7 +1507,7 @@
           px += w;
         });
         cv.toBlob(function (b) {
-          resolve(new File([b], s.file, { type: "image/png" }));
+          resolve(new File([b], fileName, { type: "image/png" }));
         }, "image/png");
       });
     }
@@ -2228,7 +2228,7 @@
         return x.id === id;
       })[0];
       if (!s) return;
-      var f = await drawLabel(s.label);
+      var f = await drawLabel(s.label, s.file);
       setOneFile(f, s.file);
       fillForm(s.exp);
       clearErrors();
@@ -2268,7 +2268,10 @@
       var btn = $("batch-samples");
       btn.disabled = true;
       for (var i = 0; i < SAMPLES.length; i++)
-        addRow(await drawLabel(SAMPLES[i].label), SAMPLES[i].exp);
+        addRow(
+          await drawLabel(SAMPLES[i].label, SAMPLES[i].file),
+          SAMPLES[i].exp,
+        );
       btn.disabled = false;
       renderBatch();
       $("progress").textContent =
