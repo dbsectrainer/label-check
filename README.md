@@ -28,8 +28,8 @@ The project can be deployed two ways:
 Requires Node 18 or newer (developed and tested on Node 26.12.0) and an Anthropic API key. No npm install is needed; there are no dependencies.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-node server.js            # http://localhost:3000
+cp .env.example .env      # then put your key in .env
+npm start                 # http://localhost:3000 (loads .env automatically)
 npm test                  # 21 matching-rule tests + rate limiter tests
 ```
 
