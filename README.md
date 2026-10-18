@@ -75,6 +75,24 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 | Marcus: standalone, no COLA integration, nothing sensitive stored | No database, no accounts, nothing saved. Images are processed in memory.                                                                           |
 | Marcus: firewall blocks outbound calls to ML endpoints            | See limitations.                                                                                                                                   |
 
+## What I learned
+
+**Design**
+
+- **The model transcribes; code decides.** The vision model only reads the label. `matcher.js` makes every pass, review or fail call, so the same input always gives the same verdict and each rule has a unit test.
+- **Three outcomes, not two.** Near-matches (`STONE'S THROW` vs `Stone's Throw`) and unreadable images need a person's judgment, so "Needs a person to look" sits between match and no match. A poor image never excuses a wrong heading, brand or number.
+
+**Engineering**
+
+- **No dependencies keeps it small, with a cost.** Plain JavaScript and no build step make the project easy to audit, but `npm start` relies on `--env-file-if-exists`, which sets the Node 22.9 minimum.
+- **The real rules live in the details.** Unit conversion (`750 mL` equals `75 cL`), the proof-is-twice-ABV check and the word-level warning diff took the most care.
+- **Operating limits matter.** Client-side image downscaling avoids oversized payloads, and the rate limiter default is sized so a 300-label batch fits.
+
+**Deployment**
+
+- **A split deployment makes CORS the hard part.** Serving the frontend from GitHub Pages and the API from Vercel needs `ALLOWED_ORIGIN` set to the Pages origin (scheme and host, no path).
+- **Keeping the API key server-side forced that architecture** in the first place.
+
 ## Tools used
 
 - **Language and runtime:** plain JavaScript (no framework, no build step, no npm dependencies) on Node 22.9 or newer. One page, `index.html`, holds the UI.
@@ -98,6 +116,12 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 - **Scope.** One label image per application (front label only). No beverage-type specific rules (for example wine appellations or beer exemptions), no check of the label against the full list of mandatory statements, no artwork-position or type-size rules.
 - **Image types.** JPG, PNG, WebP and GIF up to 20 MB (large images are downscaled automatically in the browser). iPhone HEIC photos must be shared as JPEG first.
 - **Not an approval.** The tool supports the agent's review; it does not replace judgment.
+
+## Next steps
+
+- Test with real, imperfect photos (angles, glare, crops) and benchmark the 5-second target.
+- Host the model inside the agency's cloud boundary so the network does not block it.
+- Add beverage-type specific rules (wine, beer, distilled spirits).
 
 ## Files
 
