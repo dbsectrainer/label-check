@@ -4,35 +4,21 @@ A standalone prototype that compares an alcohol label image with the data on its
 
 An agent adds a label image, enters (or imports) what the application says, and gets a verdict in a few seconds: **Matches**, **Needs a person to look**, or **Does not match**, with each item listed side by side.
 
-**Key decisions**
+![Label Check input screen: sample label on the left, application details on the right](docs/screenshot-input.jpg)
+
+![Result for the sample label: Matches the application, 9 passed, checked in 3.2 s](docs/screenshot-result.jpg)
+
+## Key decisions
 
 - **The model reads; code decides.** A vision model only transcribes the label. `matcher.js` makes every pass, review or fail call, so verdicts are repeatable and unit tested.
 - **Three outcomes, not two.** Near-matches and unreadable images go to "Needs a person to look" instead of a hard fail. A poor image never excuses a wrong number or heading.
 - **Built for the 5-second, any-agent bar.** One model call per label on the fastest tier, two numbered steps, one primary button, and no database or stored data.
-
-![Label Check input screen: sample label on the left, application details on the right](docs/screenshot-input.jpg)
-
-![Result for the sample label: Matches the application, 9 passed, checked in 3.2 s](docs/screenshot-result.jpg)
 
 ## Try it
 
 **Deployed Application:** https://label-check-puce.vercel.app — open it to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version. The same frontend is also published on GitHub Pages at https://dbsectrainer.github.io/label-check/, which calls the Vercel API.
 
 The page opens with a generated sample label already loaded. Choose **Check label**, or use the sample picker to load a label with a known problem (title-case warning heading, wrong ABV, reworded warning). The **Batch** tab has an **Add the sample labels** button that runs all five at once.
-
-## Deployment
-
-The project can be deployed two ways:
-
-1. **Full Vercel Deployment (Frontend + Serverless API)**
-   - Import the repository into [Vercel](https://vercel.com).
-   - Set the Environment Variable: `ANTHROPIC_API_KEY` = `sk-ant-...` (required, or label reading returns 503; optional: `ALLOWED_ORIGIN` for a split deployment, `RATE_LIMIT_PER_MIN`).
-   - Vercel automatically serves `index.html` statically and routes `/api/extract` to `api/extract.js`.
-
-2. **Split Deployment (GitHub Pages Frontend + Vercel/Node Backend)**
-   - Host `index.html`, `matcher.js`, and `config.js` on GitHub Pages via `.github/workflows/pages.yml`.
-   - `config.js` points any `*.github.io` host at the Vercel API (`https://label-check-puce.vercel.app`); change that URL if you host the backend elsewhere.
-   - On the backend, set `ALLOWED_ORIGIN` to the Pages origin only, with no path (for example `https://dbsectrainer.github.io`), or the browser blocks the cross-origin call.
 
 ## Run it yourself locally
 
@@ -85,6 +71,22 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 | Marcus: standalone, no COLA integration, nothing sensitive stored | No database, no accounts, nothing saved. Images are processed in memory.                                                                           |
 | Marcus: firewall blocks outbound calls to ML endpoints            | See limitations.                                                                                                                                   |
 
+## Assumptions
+
+- The application fields to compare are brand, class/type, alcohol content, net contents, bottler and (for imports) country of origin. The agent types or imports them; there is no COLA connection.
+- The warning text is the standard statement in 27 CFR 16.21. Whether the body of the statement may be in capitals is taken from the public rule; confirm with compliance.
+- Sample labels are drawn by the page itself so there is something to test with. They are clean synthetic images, not real photos.
+
+## Limitations and trade-offs
+
+- **Network.** The prototype depends on a hosted model, which Marcus said the agency network would block. A production version would need a model inside the agency's cloud boundary (for example one hosted in their Azure tenant). Only `extract()` in `index.html` and the endpoint in `server.js` would change; the matching code is independent of the model.
+- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping uploads small. Elapsed time is shown for every check, and the ~5 second target was checked by hand in the browser against both the local server and the deployed Vercel app (for example, the sample label on the deployed app checked in 3.2 s). These are manual spot checks, not a formal benchmark: timings depend on the model and network, and larger photos and batch runs have not been timed systematically.
+- **Poor photos.** Skewed, glare-affected or cropped photos are read as well as the model can and anything unreadable goes to review, but accuracy on real-world photos has not been measured: the sample labels are clean synthetic images, and a model that confidently misreads a word on a photo rated "good" would still produce a wording failure.
+- **Bold detection is a visual judgment by the model** and can be wrong on small or stylized type. Uncertain cases go to review.
+- **Scope.** One label image per application (front label only). No beverage-type specific rules (for example wine appellations or beer exemptions), no check of the label against the full list of mandatory statements, no artwork-position or type-size rules.
+- **Image types.** JPG, PNG, WebP and GIF up to 20 MB (large images are downscaled automatically in the browser). iPhone HEIC photos must be shared as JPEG first.
+- **Not an approval.** The tool supports the agent's review; it does not replace judgment.
+
 ## What I learned
 
 **Design**
@@ -103,6 +105,26 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 - **A split deployment makes CORS the hard part.** Serving the frontend from GitHub Pages and the API from Vercel needs `ALLOWED_ORIGIN` set to the Pages origin (scheme and host, no path).
 - **Keeping the API key server-side forced that architecture** in the first place.
 
+## Next steps
+
+- Test with real, imperfect photos (angles, glare, crops), and time the 5-second target across many labels and full batches rather than by hand.
+- Host the model inside the agency's cloud boundary so the network does not block it.
+- Add beverage-type specific rules (wine, beer, distilled spirits).
+
+## Deployment
+
+The project can be deployed two ways:
+
+1. **Full Vercel Deployment (Frontend + Serverless API)**
+   - Import the repository into [Vercel](https://vercel.com).
+   - Set the Environment Variable: `ANTHROPIC_API_KEY` = `sk-ant-...` (required, or label reading returns 503; optional: `ALLOWED_ORIGIN` for a split deployment, `RATE_LIMIT_PER_MIN`).
+   - Vercel automatically serves `index.html` statically and routes `/api/extract` to `api/extract.js`.
+
+2. **Split Deployment (GitHub Pages Frontend + Vercel/Node Backend)**
+   - Host `index.html`, `matcher.js`, and `config.js` on GitHub Pages via `.github/workflows/pages.yml`.
+   - `config.js` points any `*.github.io` host at the Vercel API (`https://label-check-puce.vercel.app`); change that URL if you host the backend elsewhere.
+   - On the backend, set `ALLOWED_ORIGIN` to the Pages origin only, with no path (for example `https://dbsectrainer.github.io`), or the browser blocks the cross-origin call.
+
 ## Tools used
 
 - **Language and runtime:** plain JavaScript (no framework, no build step, no npm dependencies) on Node 22.9 or newer. One page, `index.html`, holds the UI.
@@ -110,28 +132,6 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 - **Hosting:** Vercel (static frontend plus the `api/extract.js` serverless function) and GitHub Pages (static frontend only).
 - **Testing and CI:** Node's built-in `assert` for the unit tests, run by GitHub Actions on every push and pull request.
 - **Development aids:** Claude Code was used to help write and review the code and this README.
-
-## Assumptions
-
-- The application fields to compare are brand, class/type, alcohol content, net contents, bottler and (for imports) country of origin. The agent types or imports them; there is no COLA connection.
-- The warning text is the standard statement in 27 CFR 16.21. Whether the body of the statement may be in capitals is taken from the public rule; confirm with compliance.
-- Sample labels are drawn by the page itself so there is something to test with. They are clean synthetic images, not real photos.
-
-## Limitations and trade-offs
-
-- **Network.** The prototype depends on a hosted model, which Marcus said the agency network would block. A production version would need a model inside the agency's cloud boundary (for example one hosted in their Azure tenant). Only `extract()` in `index.html` and the endpoint in `server.js` would change; the matching code is independent of the model.
-- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping uploads small. Elapsed time is shown for every check, and the ~5 second target was checked by hand in the browser against both the local server and the deployed Vercel app (for example, the sample label on the deployed app checked in 3.2 s). These are manual spot checks, not a formal benchmark: timings depend on the model and network, and larger photos and batch runs have not been timed systematically.
-- **Poor photos.** Skewed, glare-affected or cropped photos are read as well as the model can and anything unreadable goes to review, but accuracy on real-world photos has not been measured: the sample labels are clean synthetic images, and a model that confidently misreads a word on a photo rated "good" would still produce a wording failure.
-- **Bold detection is a visual judgment by the model** and can be wrong on small or stylized type. Uncertain cases go to review.
-- **Scope.** One label image per application (front label only). No beverage-type specific rules (for example wine appellations or beer exemptions), no check of the label against the full list of mandatory statements, no artwork-position or type-size rules.
-- **Image types.** JPG, PNG, WebP and GIF up to 20 MB (large images are downscaled automatically in the browser). iPhone HEIC photos must be shared as JPEG first.
-- **Not an approval.** The tool supports the agent's review; it does not replace judgment.
-
-## Next steps
-
-- Test with real, imperfect photos (angles, glare, crops), and time the 5-second target across many labels and full batches rather than by hand.
-- Host the model inside the agency's cloud boundary so the network does not block it.
-- Add beverage-type specific rules (wine, beer, distilled spirits).
 
 ## Files
 
