@@ -1,5 +1,9 @@
-// Label Check API Configuration
-// For same-origin deployments (e.g. Vercel hosting both frontend and /api/extract, or local server.js), leave empty.
-// When hosting the static frontend on GitHub Pages with an external backend API, set the URL here:
-// Example: window.LABEL_CHECK_API = "https://your-vercel-deployment.vercel.app";
-window.LABEL_CHECK_API = window.LABEL_CHECK_API || "";
+// Label Check API configuration.
+// Same-origin deployments (the Vercel site, or local `npm start`) leave this empty and call /api/extract
+// on their own host. The GitHub Pages copy has no backend, so it calls the Vercel deployment instead.
+// To use a different backend, set window.LABEL_CHECK_API before this script loads.
+window.LABEL_CHECK_API =
+  window.LABEL_CHECK_API ||
+  (/\.github\.io$/.test(location.hostname)
+    ? "https://label-check-puce.vercel.app"
+    : "");

@@ -21,7 +21,8 @@ The project can be deployed two ways:
 
 2. **Split Deployment (GitHub Pages Frontend + Vercel/Node Backend)**
    - Host `index.html`, `matcher.js`, and `config.js` on GitHub Pages via `.github/workflows/pages.yml`.
-   - In `config.js`, set `window.LABEL_CHECK_API = "https://your-backend.vercel.app"` pointing to your hosted API.
+   - `config.js` points any `*.github.io` host at the Vercel API (`https://label-check-puce.vercel.app`); change that URL if you host the backend elsewhere.
+   - On the backend, set `ALLOWED_ORIGIN` to the Pages origin only, with no path (for example `https://dbsectrainer.github.io`), or the browser blocks the cross-origin call.
 
 ## Run it yourself locally
 
@@ -36,7 +37,7 @@ npm test                  # 22 matching-rule tests + rate limiter tests
 Configuration via environment variables:
 
 - `ANTHROPIC_MODEL`: defaults to `claude-haiku-5-5` (Anthropic's fastest model tier for high-volume extraction).
-- `ALLOWED_ORIGIN`: unset by default, which means same-origin only (no CORS headers). Set it to your Pages URL for a split deployment.
+- `ALLOWED_ORIGIN`: unset by default, which means same-origin only (no CORS headers). Set it to the Pages origin (scheme and host, no path) for a split deployment.
 - `RATE_LIMIT_PER_MIN`: requests per client per minute to `/api/extract`, default `120` (a 300-label batch fits). Over the limit returns 429 and the page asks the user to wait; a batch pauses at that point and the unchecked rows stay queued so it can be resumed.
 - `PORT`: defaults to `3000`.
 
