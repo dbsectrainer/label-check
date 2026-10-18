@@ -6,7 +6,7 @@ An agent adds a label image, enters (or imports) what the application says, and 
 
 ## Try it
 
-**Deployed Application:** https://label-check-puce.vercel.app — open it to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version.
+**Deployed Application:** https://label-check-puce.vercel.app — open it to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version. The same frontend is also published on GitHub Pages at https://dbsectrainer.github.io/label-check/, which calls the Vercel API.
 
 The page opens with a generated sample label already loaded. Choose **Check label**, or use the sample picker to load a label with a known problem (title-case warning heading, wrong ABV, reworded warning). The **Batch** tab has an **Add the sample labels** button that runs all five at once.
 
@@ -75,6 +75,14 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 | Marcus: standalone, no COLA integration, nothing sensitive stored | No database, no accounts, nothing saved. Images are processed in memory.                                                                           |
 | Marcus: firewall blocks outbound calls to ML endpoints            | See limitations.                                                                                                                                   |
 
+## Tools used
+
+- **Language and runtime:** plain JavaScript (no framework, no build step, no npm dependencies) on Node 22.9 or newer. One page, `index.html`, holds the UI.
+- **Label reading:** Anthropic Messages API with a vision-capable model (default `claude-haiku-5-5`, set with `ANTHROPIC_MODEL`), called only from the server so the API key never reaches the browser.
+- **Hosting:** Vercel (static frontend plus the `api/extract.js` serverless function) and GitHub Pages (static frontend only).
+- **Testing and CI:** Node's built-in `assert` for the unit tests, run by GitHub Actions on every push and pull request.
+- **Development aids:** Claude Code was used to help write and review the code and this README.
+
 ## Assumptions
 
 - The application fields to compare are brand, class/type, alcohol content, net contents, bottler and (for imports) country of origin. The agent types or imports them; there is no COLA connection.
@@ -102,4 +110,5 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 - `config.js` environment configuration for GitHub Pages frontend
 - `.github/workflows/ci.yml` runs `npm test` on pushes and pull requests
 - `.github/workflows/pages.yml` GitHub Actions automated workflow for Pages
-- `vercel.json` Vercel deployment configuration
+- `vercel.json` / `.vercelignore` Vercel configuration; `.vercelignore` keeps the local-only `server.js` out of the deployment
+- `.env.example` template for the environment variables
