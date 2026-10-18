@@ -148,7 +148,7 @@ export async function extractTextFromLabelImage(
   onProgress?: (statusText: string) => void,
 ): Promise<{ text: string; engineLabel: string }> {
   if (config.mode === "gemini_vision" && config.apiKey?.trim()) {
-    onProgress?.("Running Gemini 2.0 Flash Vision extraction...");
+    onProgress?.("Running Gemini 3.8 Flash Vision extraction...");
     const mimeType =
       imageDataUrl.match(/^data:(image\/[\w+.-]+);base64,/)?.[1] ?? "image/png";
     const base64Data = imageDataUrl.replace(
@@ -156,7 +156,7 @@ export async function extractTextFromLabelImage(
       "",
     );
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
       {
         method: "POST",
         // Key in a header, not the query string, so it stays out of URL logs and history
@@ -191,7 +191,7 @@ export async function extractTextFromLabelImage(
     const extracted = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     return {
       text: extracted,
-      engineLabel: "Cloud AI Vision (Gemini 2.0 Flash)",
+      engineLabel: "Cloud AI Vision (Gemini 3.8 Flash)",
     };
   }
 

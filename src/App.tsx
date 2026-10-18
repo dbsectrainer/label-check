@@ -319,7 +319,7 @@ export function App() {
                     Firewall-Safe)
                   </option>
                   <option value="gemini_vision">
-                    Google Gemini 2.0 Flash Vision API
+                    Google Gemini 3.8 Flash Vision API
                   </option>
                   <option value="openai_vision">
                     OpenAI GPT-4o-mini Vision API
