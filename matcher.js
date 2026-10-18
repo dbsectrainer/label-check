@@ -494,6 +494,16 @@
         note: "Could not read the warning. The image may be too hard to read",
       };
     }
+    // On a poor image, missing or changed words may just be text the model could not see,
+    // so a wording difference needs a person rather than an automatic rejection.
+    if (poor) {
+      warning.checks.forEach(function (c) {
+        if (c.key === "wording" && c.status === "fail") {
+          c.status = "review";
+          c.note += ". The image is hard to read, so check the label itself";
+        }
+      });
+    }
 
     var all = fields
       .map(function (f) {

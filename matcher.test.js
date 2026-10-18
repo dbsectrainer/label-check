@@ -171,6 +171,27 @@ t("unreadable fields on a poor image are review, not fail", () => {
   assert.equal(r.verdict, "review");
 });
 
+t("warning wording difference on a poor image is review, not fail", () => {
+  const cutOff = M.WARNING_TEXT.split(" ").slice(0, -4).join(" ");
+  const wording = (q) =>
+    M.verify(
+      app,
+      Object.assign({}, good, { governmentWarning: cutOff, imageQuality: q }),
+    ).warning.checks.find((c) => c.key === "wording");
+  assert.equal(wording("good").status, "fail");
+  assert.equal(wording("poor").status, "review");
+  assert.equal(
+    M.verify(
+      app,
+      Object.assign({}, good, {
+        governmentWarning: cutOff,
+        imageQuality: "poor",
+      }),
+    ).verdict,
+    "review",
+  );
+});
+
 t("missing field on a good image fails", () => {
   const r = M.verify(app, Object.assign({}, good, { netContents: null }));
   assert.equal(r.fields.find((f) => f.key === "net").status, "fail");
