@@ -4,6 +4,16 @@ A standalone prototype that compares an alcohol label image with the data on its
 
 An agent adds a label image, enters (or imports) what the application says, and gets a verdict in a few seconds: **Matches**, **Needs a person to look**, or **Does not match**, with each item listed side by side.
 
+**Key decisions**
+
+- **The model reads; code decides.** A vision model only transcribes the label. `matcher.js` makes every pass, review or fail call, so verdicts are repeatable and unit tested.
+- **Three outcomes, not two.** Near-matches and unreadable images go to "Needs a person to look" instead of a hard fail. A poor image never excuses a wrong number or heading.
+- **Built for the 5-second, any-agent bar.** One model call per label on the fastest tier, two numbered steps, one primary button, and no database or stored data.
+
+![Label Check input screen: sample label on the left, application details on the right](docs/screenshot-input.jpg)
+
+![Result for the sample label: Matches the application, 9 passed, checked in 3.2 s](docs/screenshot-result.jpg)
+
 ## Try it
 
 **Deployed Application:** https://label-check-puce.vercel.app — open it to test the working prototype. Reviewers do not need an Anthropic account or API key to test the deployed version. The same frontend is also published on GitHub Pages at https://dbsectrainer.github.io/label-check/, which calls the Vercel API.
@@ -31,7 +41,7 @@ Requires Node 22.9 or newer (developed and tested on Node 26.12.0) and an Anthro
 ```bash
 cp .env.example .env      # then put your key in .env
 npm start                 # http://localhost:3000 (loads .env automatically)
-npm test                  # 22 matching-rule tests + rate limiter tests
+npm test                  # matching-rule tests + rate limiter tests
 ```
 
 Configuration via environment variables:
@@ -110,7 +120,7 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 ## Limitations and trade-offs
 
 - **Network.** The prototype depends on a hosted model, which Marcus said the agency network would block. A production version would need a model inside the agency's cloud boundary (for example one hosted in their Azure tenant). Only `extract()` in `index.html` and the endpoint in `server.js` would change; the matching code is independent of the model.
-- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping uploads small. Elapsed time is shown for every check so the ~5 second target can be verified; timings depend on the model and network and have not been formally benchmarked.
+- **Speed & Latency.** Images are automatically downscaled client-side to ≤ 1600 px JPEG (~200–400 KB) before sending, preventing API payload rejections and keeping uploads small. Elapsed time is shown for every check, and the ~5 second target was checked by hand in the browser against both the local server and the deployed Vercel app (for example, the sample label on the deployed app checked in 3.2 s). These are manual spot checks, not a formal benchmark: timings depend on the model and network, and larger photos and batch runs have not been timed systematically.
 - **Poor photos.** Skewed, glare-affected or cropped photos are read as well as the model can and anything unreadable goes to review, but accuracy on real-world photos has not been measured: the sample labels are clean synthetic images, and a model that confidently misreads a word on a photo rated "good" would still produce a wording failure.
 - **Bold detection is a visual judgment by the model** and can be wrong on small or stylized type. Uncertain cases go to review.
 - **Scope.** One label image per application (front label only). No beverage-type specific rules (for example wine appellations or beer exemptions), no check of the label against the full list of mandatory statements, no artwork-position or type-size rules.
@@ -119,7 +129,7 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 
 ## Next steps
 
-- Test with real, imperfect photos (angles, glare, crops) and benchmark the 5-second target.
+- Test with real, imperfect photos (angles, glare, crops), and time the 5-second target across many labels and full batches rather than by hand.
 - Host the model inside the agency's cloud boundary so the network does not block it.
 - Add beverage-type specific rules (wine, beer, distilled spirits).
 
@@ -127,7 +137,7 @@ If the image is rated poor, anything that cannot be read is marked **Check** rat
 
 - `index.html` main application page (UI logic, image downscaling, canvas sample generator)
 - `matcher.js` pure matching rules and extraction prompt (browser and Node)
-- `matcher.test.js` unit test suite (22 tests)
+- `matcher.test.js` unit test suite for the matching rules
 - `ratelimit.js` / `ratelimit.test.js` per-client rate limiter used by both API entry points
 - `server.js` zero-dependency local Node server with `/api/extract` and CORS
 - `api/extract.js` Vercel serverless function for production API deployment

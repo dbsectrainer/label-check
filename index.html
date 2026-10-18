@@ -1,2320 +1,2380 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Label Check</title>
-<meta name="claude:viewport-fit-sides" content="cover" />
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap"
-/>
-<style>
-  /* Layout: one working column. Two tabs (one label / batch). Inputs on top, verdict and field-by-field results underneath. */
-  :root {
-    --bg: #f3f5f8;
-    --surface: #ffffff;
-    --ink: #16202e;
-    --muted: #566274;
-    --line: #d3d9e2;
-    --accent: #0b4f9c;
-    --accent-ink: #ffffff;
-    --accent-soft: #e2ecf8;
-    --ok: #0f6b37;
-    --ok-bg: #e1f2e7;
-    --warn: #7f4d00;
-    --warn-bg: #fcefd2;
-    --bad: #a0210f;
-    --bad-bg: #fae3df;
-    --font-body:
-      "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --font-mono:
-      "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0f151e;
-      --surface: #18212d;
-      --ink: #e8edf4;
-      --muted: #9eabbd;
-      --line: #2f3b4c;
-      --accent: #6fa8ee;
-      --accent-ink: #0b1522;
-      --accent-soft: #1b2b42;
-      --ok: #6fd69a;
-      --ok-bg: #12301f;
-      --warn: #f0be63;
-      --warn-bg: #3a2c0c;
-      --bad: #ff9a8a;
-      --bad-bg: #3c1814;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0f151e;
-    --surface: #18212d;
-    --ink: #e8edf4;
-    --muted: #9eabbd;
-    --line: #2f3b4c;
-    --accent: #6fa8ee;
-    --accent-ink: #0b1522;
-    --accent-soft: #1b2b42;
-    --ok: #6fd69a;
-    --ok-bg: #12301f;
-    --warn: #f0be63;
-    --warn-bg: #3a2c0c;
-    --bad: #ff9a8a;
-    --bad-bg: #3c1814;
-    color-scheme: dark;
-  }
-
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--font-body);
-    font-size: 17px;
-    line-height: 1.5;
-    padding-block: 24px 56px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-  }
-  .wrap {
-    max-width: 1040px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  :focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
-  h1 {
-    font-size: 2rem;
-    line-height: 1.15;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
-  h2 {
-    font-size: 1.15rem;
-    margin: 0 0 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  h3 {
-    font-size: 1.05rem;
-    margin: 0 0 10px;
-  }
-  p {
-    margin: 0;
-  }
-  .lede {
-    color: var(--muted);
-    margin-top: 6px;
-    max-width: 60ch;
-  }
-  .hint {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 8px;
-    border-bottom: 2px solid var(--line);
-  }
-  .tab {
-    font: inherit;
-    font-weight: 600;
-    background: none;
-    border: 0;
-    color: var(--muted);
-    padding: 12px 18px;
-    min-height: 48px;
-    cursor: pointer;
-    border-bottom: 4px solid transparent;
-    margin-bottom: -2px;
-  }
-  .tab[aria-selected="true"] {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 20px;
-    min-width: 0;
-  }
-  .step {
-    display: inline-grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-size: 0.9rem;
-    flex: none;
-  }
-  .grid2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  @media (max-width: 760px) {
-    .grid2 {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .btn {
-    font: inherit;
-    font-weight: 600;
-    min-height: 48px;
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: 2px solid var(--accent);
-    background: var(--accent);
-    color: var(--accent-ink);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-  .btn:hover {
-    filter: brightness(1.08);
-  }
-  .btn[disabled] {
-    opacity: 0.5;
-    cursor: not-allowed;
-    filter: none;
-  }
-  .btn-secondary {
-    background: var(--surface);
-    color: var(--accent);
-  }
-  .btn-quiet {
-    background: transparent;
-    color: var(--accent);
-    border-color: var(--line);
-  }
-  .btn-lg {
-    min-height: 56px;
-    font-size: 1.1rem;
-    padding-inline: 32px;
-  }
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
-  .sr {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  .sr:focus-visible + label {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  .drop {
-    border: 2px dashed var(--line);
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .drop.over {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-  .preview-box {
-    width: 100%;
-    display: grid;
-    place-items: center;
-    background: var(--bg);
-    border-radius: 6px;
-    min-height: 160px;
-    padding: 8px;
-  }
-  .preview-box img {
-    max-height: 280px;
-    width: auto;
-    border-radius: 4px;
-  }
-  .sample-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    align-items: center;
-    margin-top: 14px;
-  }
-  .sample-row label {
-    font-size: 0.9rem;
-    color: var(--muted);
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 14px;
-    min-width: 0;
-  }
-  .field label,
-  .flabel {
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-  input[type="text"],
-  select,
-  textarea {
-    font: inherit;
-    color: var(--ink);
-    background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 6px;
-    padding: 10px 12px;
-    min-height: 48px;
-    width: 100%;
-    min-width: 0;
-  }
-  textarea {
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    min-height: 96px;
-  }
-  input[aria-invalid="true"] {
-    border-color: var(--bad);
-  }
-  .err {
-    color: var(--bad);
-    font-size: 0.9rem;
-    min-height: 0;
-  }
-  .check {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 14px;
-    min-height: 44px;
-  }
-  .check input {
-    width: 22px;
-    height: 22px;
-    accent-color: var(--accent);
-  }
-  .check label {
-    font-weight: 600;
-  }
-
-  .actionbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 14px;
-  }
-  .status-text {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .empty {
-    border: 2px dashed var(--line);
-    border-radius: 8px;
-    padding: 24px;
-    color: var(--muted);
-  }
-
-  /* Results */
-  .banner {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    padding: 18px 20px;
-    border-radius: 8px;
-    border: 2px solid;
-  }
-  .banner-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 1.5rem;
-    font-weight: 700;
-    flex: none;
-    color: var(--surface);
-  }
-  .banner-title {
-    font-size: 1.3rem;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-  .banner-sub {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .banner-ok {
-    background: var(--ok-bg);
-    border-color: var(--ok);
-  }
-  .banner-ok .banner-icon {
-    background: var(--ok);
-  }
-  .banner-warn {
-    background: var(--warn-bg);
-    border-color: var(--warn);
-  }
-  .banner-warn .banner-icon {
-    background: var(--warn);
-  }
-  .banner-bad {
-    background: var(--bad-bg);
-    border-color: var(--bad);
-  }
-  .banner-bad .banner-icon {
-    background: var(--bad);
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 10px 3px 6px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.88rem;
-    white-space: nowrap;
-  }
-  .chip-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 0.8rem;
-    color: var(--surface);
-  }
-  .chip-ok {
-    background: var(--ok-bg);
-    color: var(--ok);
-  }
-  .chip-ok .chip-icon {
-    background: var(--ok);
-  }
-  .chip-warn {
-    background: var(--warn-bg);
-    color: var(--warn);
-  }
-  .chip-warn .chip-icon {
-    background: var(--warn);
-  }
-  .chip-bad {
-    background: var(--bad-bg);
-    color: var(--bad);
-  }
-  .chip-bad .chip-icon {
-    background: var(--bad);
-  }
-  .chip-muted {
-    background: var(--bg);
-    color: var(--muted);
-  }
-  .chip-muted .chip-icon {
-    background: var(--muted);
-  }
-
-  .panel {
-    margin-top: 16px;
-  }
-  .notice {
-    margin-top: 14px;
-    padding: 12px 14px;
-    border-radius: 6px;
-    background: var(--warn-bg);
-    color: var(--ink);
-    border-left: 5px solid var(--warn);
-  }
-  .ftable {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--surface);
-  }
-  .frow {
-    display: grid;
-    grid-template-columns: 1.1fr 1.4fr 1.4fr 1.3fr;
-    gap: 12px;
-    padding: 12px 14px;
-    border-top: 1px solid var(--line);
-    align-items: start;
-  }
-  .frow:first-child {
-    border-top: 0;
-  }
-  .fhead {
-    background: var(--bg);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .fname {
-    font-weight: 600;
-  }
-  .fcell {
-    overflow-wrap: anywhere;
-    min-width: 0;
-  }
-  .mono {
-    font-family: var(--font-mono);
-    font-size: 0.92rem;
-  }
-  .note {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-top: 4px;
-  }
-  @media (max-width: 700px) {
-    .fhead {
-      display: none;
-    }
-    .frow {
-      grid-template-columns: 1fr;
-      gap: 4px;
-    }
-    .fcell::before {
-      content: attr(data-l) ": ";
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-  }
-  .wlist {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--surface);
-  }
-  .wlist li {
-    padding: 12px 14px;
-    border-top: 1px solid var(--line);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 12px;
-    align-items: center;
-  }
-  .wlist li:first-child {
-    border-top: 0;
-  }
-  .wlist .wnote {
-    flex-basis: 100%;
-    color: var(--muted);
-    font-size: 0.9rem;
-    padding-left: 2px;
-  }
-  .diff {
-    margin-top: 12px;
-    padding: 14px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 1.8;
-    overflow-wrap: anywhere;
-  }
-  .diff del {
-    background: var(--bad-bg);
-    color: var(--bad);
-    text-decoration: line-through;
-    padding: 1px 3px;
-    border-radius: 3px;
-  }
-  .diff ins {
-    background: var(--warn-bg);
-    color: var(--warn);
-    text-decoration: underline;
-    padding: 1px 3px;
-    border-radius: 3px;
-  }
-  details summary {
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--accent);
-    min-height: 40px;
-    display: flex;
-    align-items: center;
-  }
-  details p {
-    margin-top: 6px;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-
-  /* Batch */
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .filter {
-    font: inherit;
-    font-weight: 600;
-    font-size: 0.92rem;
-    min-height: 44px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 2px solid var(--line);
-    background: var(--surface);
-    color: var(--ink);
-    cursor: pointer;
-    font-variant-numeric: tabular-nums;
-  }
-  .filter[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-  .brows {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .brow {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 14px;
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: start;
-  }
-  .brow[hidden] {
-    display: none;
-  }
-  .bthumb {
-    width: 96px;
-    height: 96px;
-    background: var(--bg);
-    border-radius: 6px;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-  }
-  .bthumb img {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  .bfile {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--muted);
-    overflow-wrap: anywhere;
-    margin-bottom: 8px;
-  }
-  .binputs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 8px 12px;
-  }
-  .binputs .field {
-    margin: 0;
-  }
-  .binputs label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .binputs input {
-    min-height: 40px;
-    padding: 6px 10px;
-    font-size: 0.95rem;
-  }
-  .bstat {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-  }
-  .bdetail {
-    grid-column: 1 / -1;
-  }
-  @media (max-width: 640px) {
-    .brow {
-      grid-template-columns: 72px minmax(0, 1fr);
-    }
-    .bthumb {
-      width: 72px;
-      height: 72px;
-    }
-    .bstat {
-      grid-column: 1 / -1;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .banner {
-      animation: rise 0.25s ease-out;
-    }
-  }
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-</style>
-</head>
-<body>
-
-<main class="wrap">
-  <header>
-    <h1>Label Check</h1>
-    <p class="lede">
-      Compare an alcohol label image with its application. The label is read for
-      you, then each item is checked and the government warning is compared word
-      for word.
-    </p>
-  </header>
-
-  <div class="tabs" role="tablist" aria-label="Mode">
-    <button
-      class="tab"
-      role="tab"
-      id="tab-one"
-      aria-selected="true"
-      aria-controls="panel-one"
-    >
-      One label
-    </button>
-    <button
-      class="tab"
-      role="tab"
-      id="tab-batch"
-      aria-selected="false"
-      aria-controls="panel-batch"
-      tabindex="-1"
-    >
-      Batch
-    </button>
-  </div>
-
-  <!-- ONE LABEL -->
-  <section
-    id="panel-one"
-    role="tabpanel"
-    aria-labelledby="tab-one"
-    style="display: flex; flex-direction: column; gap: 20px"
-  >
-    <div class="grid2">
-      <div class="card">
-        <h2><span class="step" aria-hidden="true">1</span> Label image</h2>
-        <div class="drop" id="drop-one">
-          <div class="preview-box">
-            <img id="preview" alt="The selected label" />
-          </div>
-          <div class="row">
-            <input
-              class="sr"
-              id="file-one"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-            />
-            <label class="btn btn-secondary" for="file-one">Choose image</label>
-            <span id="file-name" class="hint"></span>
-          </div>
-          <p class="hint">
-            Or drag an image onto this box. JPG, PNG, WebP or GIF.
-          </p>
-        </div>
-        <div class="sample-row">
-          <label for="sample-pick">No label handy? Load a sample:</label>
-          <select
-            id="sample-pick"
-            style="width: auto; max-width: 100%"
-          ></select>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>
-          <span class="step" aria-hidden="true">2</span> What the application
-          says
-        </h2>
-        <form id="form-one" novalidate autocomplete="off">
-          <div class="field">
-            <label for="f-brand">Brand name</label
-            ><input type="text" id="f-brand" />
-            <p class="err" id="e-brand"></p>
-          </div>
-          <div class="field">
-            <label for="f-class">Class / type</label
-            ><input type="text" id="f-class" />
-            <p class="err" id="e-class"></p>
-          </div>
-          <div class="field">
-            <label for="f-abv">Alcohol content</label
-            ><input type="text" id="f-abv" placeholder="for example 45%" />
-            <p class="err" id="e-abv"></p>
-          </div>
-          <div class="field">
-            <label for="f-net">Net contents</label
-            ><input type="text" id="f-net" placeholder="for example 750 mL" />
-            <p class="err" id="e-net"></p>
-          </div>
-          <div class="field">
-            <label for="f-bottler"
-              >Bottler / producer name and address
-              <span class="hint">(optional)</span></label
-            ><input type="text" id="f-bottler" />
-          </div>
-          <div class="check">
-            <input type="checkbox" id="f-imported" /><label for="f-imported"
-              >This is an imported product</label
-            >
-          </div>
-          <div class="field" id="country-field" hidden>
-            <label for="f-country">Country of origin</label
-            ><input type="text" id="f-country" />
-          </div>
-          <p class="hint" id="sample-note">
-            These are example values for the sample label. Replace them with the
-            application's.
-          </p>
-        </form>
-      </div>
-    </div>
-
-    <div class="actionbar">
-      <button class="btn btn-primary btn-lg" id="check-one" type="button">
-        Check label
-      </button>
-      <span
-        class="status-text"
-        id="status-one"
-        role="status"
-        aria-live="polite"
-      ></span>
-    </div>
-    <div id="result-one" aria-live="polite">
-      <div class="empty">
-        The result appears here. It shows whether each item matches and whether
-        the government warning is exact.
-      </div>
-    </div>
-  </section>
-
-  <!-- BATCH -->
-  <section
-    id="panel-batch"
-    role="tabpanel"
-    aria-labelledby="tab-batch"
-    hidden
-    style="flex-direction: column; gap: 20px"
-  >
-    <div class="card">
-      <h2><span class="step" aria-hidden="true">1</span> Label images</h2>
-      <p class="hint" style="margin-bottom: 12px">
-        Add as many as you like, 300 at a time is fine. Choose files or drag
-        them onto this box.
-      </p>
-      <div class="drop" id="drop-batch">
-        <div class="row">
-          <input
-            class="sr"
-            id="file-batch"
-            type="file"
-            multiple
-            accept="image/jpeg,image/png,image/webp,image/gif"
-          />
-          <label class="btn btn-secondary" for="file-batch"
-            >Choose images</label
-          >
-          <button class="btn btn-quiet" id="batch-samples" type="button">
-            Add the sample labels
-          </button>
-          <button class="btn btn-quiet" id="batch-clear" type="button">
-            Clear all
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>
-        <span class="step" aria-hidden="true">2</span> Application details
-      </h2>
-      <p class="hint" style="margin-bottom: 12px">
-        Type into the rows below, or paste a CSV with the columns
-        <span class="mono">file, brand, class, abv, net, bottler, country</span
-        >. Rows are matched to images by file name. Leave country blank for
-        domestic products.
-      </p>
-      <label class="sr" for="csv">CSV of application details</label>
-      <textarea
-        id="csv"
-        placeholder="file,brand,class,abv,net,bottler,country"
-      ></textarea>
-      <div class="row" style="margin-top: 10px">
-        <button class="btn btn-secondary" id="csv-apply" type="button">
-          Fill rows from CSV
-        </button>
-        <button class="btn btn-quiet" id="csv-template" type="button">
-          Copy a CSV example
-        </button>
-        <span class="hint" id="csv-msg" role="status" aria-live="polite"></span>
-      </div>
-    </div>
-
-    <div class="actionbar">
-      <button
-        class="btn btn-primary btn-lg"
-        id="check-batch"
-        type="button"
-        disabled
-      >
-        Check all labels
-      </button>
-      <button class="btn btn-secondary" id="stop-batch" type="button" hidden>
-        Stop
-      </button>
-      <span
-        class="status-text"
-        id="progress"
-        role="status"
-        aria-live="polite"
-      ></span>
-    </div>
-
-    <div id="summary" hidden>
-      <div class="chips" id="filters"></div>
-      <div class="row" style="margin-top: 10px">
-        <button class="btn btn-quiet" id="copy-results" type="button">
-          Copy results as CSV</button
-        ><span
-          class="hint"
-          id="copy-msg"
-          role="status"
-          aria-live="polite"
-        ></span>
-      </div>
-    </div>
-    <div class="brows" id="brows">
-      <div class="empty">
-        No labels yet. Choose images or add the sample labels to see how a batch
-        works.
-      </div>
-    </div>
-  </section>
-</main>
-
-<script src="config.js"></script>
-<script src="matcher.js"></script>
-<script>
-  (function () {
-    "use strict";
-    var LM = window.LabelMatcher;
-    var $ = function (id) {
-      return document.getElementById(id);
-    };
-
-    function h(tag, attrs) {
-      var el = document.createElement(tag),
-        k,
-        i,
-        c;
-      if (attrs)
-        for (k in attrs) {
-          var v = attrs[k];
-          if (v == null || v === false) continue;
-          if (k === "class") el.className = v;
-          else if (k === "text") el.textContent = v;
-          else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
-          else el.setAttribute(k, v === true ? "" : v);
-        }
-      for (i = 2; i < arguments.length; i++) {
-        c = arguments[i];
-        if (c == null || c === false) continue;
-        el.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Label Check</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap"
+    />
+    <style>
+      /* Layout: one working column. Two tabs (one label / batch). Inputs on top, verdict and field-by-field results underneath. */
+      :root {
+        --bg: #f3f5f8;
+        --surface: #ffffff;
+        --ink: #16202e;
+        --muted: #566274;
+        --line: #d3d9e2;
+        --accent: #0b4f9c;
+        --accent-ink: #ffffff;
+        --accent-soft: #e2ecf8;
+        --ok: #0f6b37;
+        --ok-bg: #e1f2e7;
+        --warn: #7f4d00;
+        --warn-bg: #fcefd2;
+        --bad: #a0210f;
+        --bad-bg: #fae3df;
+        --font-body:
+          "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto,
+          sans-serif;
+        --font-mono:
+          "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
       }
-      return el;
-    }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0f151e;
+          --surface: #18212d;
+          --ink: #e8edf4;
+          --muted: #9eabbd;
+          --line: #2f3b4c;
+          --accent: #6fa8ee;
+          --accent-ink: #0b1522;
+          --accent-soft: #1b2b42;
+          --ok: #6fd69a;
+          --ok-bg: #12301f;
+          --warn: #f0be63;
+          --warn-bg: #3a2c0c;
+          --bad: #ff9a8a;
+          --bad-bg: #3c1814;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f151e;
+        --surface: #18212d;
+        --ink: #e8edf4;
+        --muted: #9eabbd;
+        --line: #2f3b4c;
+        --accent: #6fa8ee;
+        --accent-ink: #0b1522;
+        --accent-soft: #1b2b42;
+        --ok: #6fd69a;
+        --ok-bg: #12301f;
+        --warn: #f0be63;
+        --warn-bg: #3a2c0c;
+        --bad: #ff9a8a;
+        --bad-bg: #3c1814;
+        color-scheme: dark;
+      }
 
-    // ---------------------------------------------------------------- reading the label
-    var sampleFn = null,
-      canSendImages = false;
-    var ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    var PROMPT = "The label image is attached.\n\n" + LM.EXTRACTION_PROMPT;
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-body);
+        font-size: 17px;
+        line-height: 1.5;
+        padding-block: 24px 56px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      h1 {
+        font-size: 2rem;
+        line-height: 1.15;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h3 {
+        font-size: 1.05rem;
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 0;
+      }
+      .lede {
+        color: var(--muted);
+        margin-top: 6px;
+        max-width: 60ch;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
 
-    if (window.claude && window.claude.use) {
-      window.claude
-        .use("sample")
-        .then(function (fn) {
-          sampleFn = fn;
-          if (!fn) return;
-          return fn
-            .limits()
-            .then(function (l) {
-              canSendImages = !!l.images;
+      .tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 2px solid var(--line);
+      }
+      .tab {
+        font: inherit;
+        font-weight: 600;
+        background: none;
+        border: 0;
+        color: var(--muted);
+        padding: 12px 18px;
+        min-height: 48px;
+        cursor: pointer;
+        border-bottom: 4px solid transparent;
+        margin-bottom: -2px;
+      }
+      .tab[aria-selected="true"] {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 20px;
+        min-width: 0;
+      }
+      .step {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-size: 0.9rem;
+        flex: none;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 760px) {
+        .grid2 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .btn {
+        font: inherit;
+        font-weight: 600;
+        min-height: 48px;
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: 2px solid var(--accent);
+        background: var(--accent);
+        color: var(--accent-ink);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .btn:hover {
+        filter: brightness(1.08);
+      }
+      .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: none;
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--accent);
+      }
+      .btn-quiet {
+        background: transparent;
+        color: var(--accent);
+        border-color: var(--line);
+      }
+      .btn-lg {
+        min-height: 56px;
+        font-size: 1.1rem;
+        padding-inline: 32px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .sr:focus-visible + label {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .drop {
+        border: 2px dashed var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .drop.over {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .preview-box {
+        width: 100%;
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+        border-radius: 6px;
+        min-height: 160px;
+        padding: 8px;
+      }
+      .preview-box img {
+        max-height: 280px;
+        width: auto;
+        border-radius: 4px;
+      }
+      .sample-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+        margin-top: 14px;
+      }
+      .sample-row label {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 14px;
+        min-width: 0;
+      }
+      .field label,
+      .flabel {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      input[type="text"],
+      select,
+      textarea {
+        font: inherit;
+        color: var(--ink);
+        background: var(--surface);
+        border: 2px solid var(--line);
+        border-radius: 6px;
+        padding: 10px 12px;
+        min-height: 48px;
+        width: 100%;
+        min-width: 0;
+      }
+      textarea {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        min-height: 96px;
+      }
+      input[aria-invalid="true"] {
+        border-color: var(--bad);
+      }
+      .err {
+        color: var(--bad);
+        font-size: 0.9rem;
+        min-height: 0;
+      }
+      .check {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+        min-height: 44px;
+      }
+      .check input {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--accent);
+      }
+      .check label {
+        font-weight: 600;
+      }
+
+      .actionbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+      }
+      .status-text {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .empty {
+        border: 2px dashed var(--line);
+        border-radius: 8px;
+        padding: 24px;
+        color: var(--muted);
+      }
+
+      /* Results */
+      .banner {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 18px 20px;
+        border-radius: 8px;
+        border: 2px solid;
+      }
+      .banner-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        flex: none;
+        color: var(--surface);
+      }
+      .banner-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+      .banner-sub {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .banner-ok {
+        background: var(--ok-bg);
+        border-color: var(--ok);
+      }
+      .banner-ok .banner-icon {
+        background: var(--ok);
+      }
+      .banner-warn {
+        background: var(--warn-bg);
+        border-color: var(--warn);
+      }
+      .banner-warn .banner-icon {
+        background: var(--warn);
+      }
+      .banner-bad {
+        background: var(--bad-bg);
+        border-color: var(--bad);
+      }
+      .banner-bad .banner-icon {
+        background: var(--bad);
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px 3px 6px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        white-space: nowrap;
+      }
+      .chip-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 0.8rem;
+        color: var(--surface);
+      }
+      .chip-ok {
+        background: var(--ok-bg);
+        color: var(--ok);
+      }
+      .chip-ok .chip-icon {
+        background: var(--ok);
+      }
+      .chip-warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .chip-warn .chip-icon {
+        background: var(--warn);
+      }
+      .chip-bad {
+        background: var(--bad-bg);
+        color: var(--bad);
+      }
+      .chip-bad .chip-icon {
+        background: var(--bad);
+      }
+      .chip-muted {
+        background: var(--bg);
+        color: var(--muted);
+      }
+      .chip-muted .chip-icon {
+        background: var(--muted);
+      }
+
+      .panel {
+        margin-top: 16px;
+      }
+      .notice {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 6px;
+        background: var(--warn-bg);
+        color: var(--ink);
+        border-left: 5px solid var(--warn);
+      }
+      .ftable {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .frow {
+        display: grid;
+        grid-template-columns: 1.1fr 1.4fr 1.4fr 1.3fr;
+        gap: 12px;
+        padding: 12px 14px;
+        border-top: 1px solid var(--line);
+        align-items: start;
+      }
+      .frow:first-child {
+        border-top: 0;
+      }
+      .fhead {
+        background: var(--bg);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .fname {
+        font-weight: 600;
+      }
+      .fcell {
+        overflow-wrap: anywhere;
+        min-width: 0;
+      }
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 0.92rem;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 4px;
+      }
+      @media (max-width: 700px) {
+        .fhead {
+          display: none;
+        }
+        .frow {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+        .fcell::before {
+          content: attr(data-l) ": ";
+          color: var(--muted);
+          font-size: 0.85rem;
+        }
+      }
+      .wlist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+      .wlist li {
+        padding: 12px 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .wlist li:first-child {
+        border-top: 0;
+      }
+      .wlist .wnote {
+        flex-basis: 100%;
+        color: var(--muted);
+        font-size: 0.9rem;
+        padding-left: 2px;
+      }
+      .diff {
+        margin-top: 12px;
+        padding: 14px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        line-height: 1.8;
+        overflow-wrap: anywhere;
+      }
+      .diff del {
+        background: var(--bad-bg);
+        color: var(--bad);
+        text-decoration: line-through;
+        padding: 1px 3px;
+        border-radius: 3px;
+      }
+      .diff ins {
+        background: var(--warn-bg);
+        color: var(--warn);
+        text-decoration: underline;
+        padding: 1px 3px;
+        border-radius: 3px;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+      }
+      details p {
+        margin-top: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      /* Batch */
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .filter {
+        font: inherit;
+        font-weight: 600;
+        font-size: 0.92rem;
+        min-height: 44px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 2px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        font-variant-numeric: tabular-nums;
+      }
+      .filter[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .brows {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .brow {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 96px minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: start;
+      }
+      .brow[hidden] {
+        display: none;
+      }
+      .bthumb {
+        width: 96px;
+        height: 96px;
+        background: var(--bg);
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .bthumb img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      .bfile {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+        margin-bottom: 8px;
+      }
+      .binputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px 12px;
+      }
+      .binputs .field {
+        margin: 0;
+      }
+      .binputs label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .binputs input {
+        min-height: 40px;
+        padding: 6px 10px;
+        font-size: 0.95rem;
+      }
+      .bstat {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .bdetail {
+        grid-column: 1 / -1;
+      }
+      @media (max-width: 640px) {
+        .brow {
+          grid-template-columns: 72px minmax(0, 1fr);
+        }
+        .bthumb {
+          width: 72px;
+          height: 72px;
+        }
+        .bstat {
+          grid-column: 1 / -1;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .banner {
+          animation: rise 0.25s ease-out;
+        }
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <h1>Label Check</h1>
+        <p class="lede">
+          Compare an alcohol label image with its application. The label is read
+          for you, then each item is checked and the government warning is
+          compared word for word.
+        </p>
+      </header>
+
+      <div class="tabs" role="tablist" aria-label="Mode">
+        <button
+          class="tab"
+          role="tab"
+          id="tab-one"
+          aria-selected="true"
+          aria-controls="panel-one"
+        >
+          One label
+        </button>
+        <button
+          class="tab"
+          role="tab"
+          id="tab-batch"
+          aria-selected="false"
+          aria-controls="panel-batch"
+          tabindex="-1"
+        >
+          Batch
+        </button>
+      </div>
+
+      <!-- ONE LABEL -->
+      <section
+        id="panel-one"
+        role="tabpanel"
+        aria-labelledby="tab-one"
+        style="display: flex; flex-direction: column; gap: 20px"
+      >
+        <div class="grid2">
+          <div class="card">
+            <h2><span class="step" aria-hidden="true">1</span> Label image</h2>
+            <div class="drop" id="drop-one">
+              <div class="preview-box">
+                <img id="preview" alt="The selected label" />
+              </div>
+              <div class="row">
+                <input
+                  class="sr"
+                  id="file-one"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                />
+                <label class="btn btn-secondary" for="file-one"
+                  >Choose image</label
+                >
+                <span id="file-name" class="hint"></span>
+              </div>
+              <p class="hint">
+                Or drag an image onto this box. JPG, PNG, WebP or GIF.
+              </p>
+            </div>
+            <div class="sample-row">
+              <label for="sample-pick">No label handy? Load a sample:</label>
+              <select
+                id="sample-pick"
+                style="width: auto; max-width: 100%"
+              ></select>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <span class="step" aria-hidden="true">2</span> What the
+              application says
+            </h2>
+            <form id="form-one" novalidate autocomplete="off">
+              <div class="field">
+                <label for="f-brand">Brand name</label
+                ><input type="text" id="f-brand" />
+                <p class="err" id="e-brand"></p>
+              </div>
+              <div class="field">
+                <label for="f-class">Class / type</label
+                ><input type="text" id="f-class" />
+                <p class="err" id="e-class"></p>
+              </div>
+              <div class="field">
+                <label for="f-abv">Alcohol content</label
+                ><input type="text" id="f-abv" placeholder="for example 45%" />
+                <p class="err" id="e-abv"></p>
+              </div>
+              <div class="field">
+                <label for="f-net">Net contents</label
+                ><input
+                  type="text"
+                  id="f-net"
+                  placeholder="for example 750 mL"
+                />
+                <p class="err" id="e-net"></p>
+              </div>
+              <div class="field">
+                <label for="f-bottler"
+                  >Bottler / producer name and address
+                  <span class="hint">(optional)</span></label
+                ><input type="text" id="f-bottler" />
+              </div>
+              <div class="check">
+                <input type="checkbox" id="f-imported" /><label for="f-imported"
+                  >This is an imported product</label
+                >
+              </div>
+              <div class="field" id="country-field" hidden>
+                <label for="f-country">Country of origin</label
+                ><input type="text" id="f-country" />
+              </div>
+              <p class="hint" id="sample-note">
+                These are example values for the sample label. Replace them with
+                the application's.
+              </p>
+            </form>
+          </div>
+        </div>
+
+        <div class="actionbar">
+          <button class="btn btn-primary btn-lg" id="check-one" type="button">
+            Check label
+          </button>
+          <span
+            class="status-text"
+            id="status-one"
+            role="status"
+            aria-live="polite"
+          ></span>
+        </div>
+        <div id="result-one" aria-live="polite">
+          <div class="empty">
+            The result appears here. It shows whether each item matches and
+            whether the government warning is exact.
+          </div>
+        </div>
+      </section>
+
+      <!-- BATCH -->
+      <section
+        id="panel-batch"
+        role="tabpanel"
+        aria-labelledby="tab-batch"
+        hidden
+        style="flex-direction: column; gap: 20px"
+      >
+        <div class="card">
+          <h2><span class="step" aria-hidden="true">1</span> Label images</h2>
+          <p class="hint" style="margin-bottom: 12px">
+            Add as many as you like, 300 at a time is fine. Choose files or drag
+            them onto this box.
+          </p>
+          <div class="drop" id="drop-batch">
+            <div class="row">
+              <input
+                class="sr"
+                id="file-batch"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/gif"
+              />
+              <label class="btn btn-secondary" for="file-batch"
+                >Choose images</label
+              >
+              <button class="btn btn-quiet" id="batch-samples" type="button">
+                Add the sample labels
+              </button>
+              <button class="btn btn-quiet" id="batch-clear" type="button">
+                Clear all
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>
+            <span class="step" aria-hidden="true">2</span> Application details
+          </h2>
+          <p class="hint" style="margin-bottom: 12px">
+            Type into the rows below, or paste a CSV with the columns
+            <span class="mono"
+              >file, brand, class, abv, net, bottler, country</span
+            >. Rows are matched to images by file name. Leave country blank for
+            domestic products.
+          </p>
+          <label class="sr" for="csv">CSV of application details</label>
+          <textarea
+            id="csv"
+            placeholder="file,brand,class,abv,net,bottler,country"
+          ></textarea>
+          <div class="row" style="margin-top: 10px">
+            <button class="btn btn-secondary" id="csv-apply" type="button">
+              Fill rows from CSV
+            </button>
+            <button class="btn btn-quiet" id="csv-template" type="button">
+              Copy a CSV example
+            </button>
+            <span
+              class="hint"
+              id="csv-msg"
+              role="status"
+              aria-live="polite"
+            ></span>
+          </div>
+        </div>
+
+        <div class="actionbar">
+          <button
+            class="btn btn-primary btn-lg"
+            id="check-batch"
+            type="button"
+            disabled
+          >
+            Check all labels
+          </button>
+          <button
+            class="btn btn-secondary"
+            id="stop-batch"
+            type="button"
+            hidden
+          >
+            Stop
+          </button>
+          <span
+            class="status-text"
+            id="progress"
+            role="status"
+            aria-live="polite"
+          ></span>
+        </div>
+
+        <div id="summary" hidden>
+          <div class="chips" id="filters"></div>
+          <div class="row" style="margin-top: 10px">
+            <button class="btn btn-quiet" id="copy-results" type="button">
+              Copy results as CSV</button
+            ><span
+              class="hint"
+              id="copy-msg"
+              role="status"
+              aria-live="polite"
+            ></span>
+          </div>
+        </div>
+        <div class="brows" id="brows">
+          <div class="empty">
+            No labels yet. Choose images or add the sample labels to see how a
+            batch works.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="matcher.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var LM = window.LabelMatcher;
+        var $ = function (id) {
+          return document.getElementById(id);
+        };
+
+        function h(tag, attrs) {
+          var el = document.createElement(tag),
+            k,
+            i,
+            c;
+          if (attrs)
+            for (k in attrs) {
+              var v = attrs[k];
+              if (v == null || v === false) continue;
+              if (k === "class") el.className = v;
+              else if (k === "text") el.textContent = v;
+              else if (k.slice(0, 2) === "on")
+                el.addEventListener(k.slice(2), v);
+              else el.setAttribute(k, v === true ? "" : v);
+            }
+          for (i = 2; i < arguments.length; i++) {
+            c = arguments[i];
+            if (c == null || c === false) continue;
+            el.appendChild(
+              typeof c === "string" ? document.createTextNode(c) : c,
+            );
+          }
+          return el;
+        }
+
+        // ---------------------------------------------------------------- reading the label
+        var sampleFn = null,
+          canSendImages = false;
+        var ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        var PROMPT = "The label image is attached.\n\n" + LM.EXTRACTION_PROMPT;
+
+        if (window.claude && window.claude.use) {
+          window.claude
+            .use("sample")
+            .then(function (fn) {
+              sampleFn = fn;
+              if (!fn) return;
+              return fn
+                .limits()
+                .then(function (l) {
+                  canSendImages = !!l.images;
+                })
+                .catch(function () {});
             })
             .catch(function () {});
-        })
-        .catch(function () {});
-    }
+        }
 
-    function toBase64(file) {
-      return new Promise(function (resolve, reject) {
-        var r = new FileReader();
-        r.onload = function () {
-          resolve(String(r.result).split(",")[1]);
-        };
-        r.onerror = function () {
-          reject({ code: "image_rejected" });
-        };
-        r.readAsDataURL(file);
-      });
-    }
-
-    function downscaleImage(file, maxDim, quality) {
-      maxDim = maxDim || 1600;
-      quality = quality || 0.85;
-      return new Promise(function (resolve, reject) {
-        var img = new Image();
-        var url = URL.createObjectURL(file);
-        img.onload = function () {
-          URL.revokeObjectURL(url);
-          var w = img.naturalWidth || img.width;
-          var h = img.naturalHeight || img.height;
-          if (!w || !h) {
-            toBase64(file)
-              .then(function (data) {
-                resolve({ mediaType: file.type, data: data });
-              })
-              .catch(reject);
-            return;
-          }
-          var scale = Math.min(1, maxDim / Math.max(w, h));
-          var targetW = Math.round(w * scale);
-          var targetH = Math.round(h * scale);
-
-          var canvas = document.createElement("canvas");
-          canvas.width = targetW;
-          canvas.height = targetH;
-          var ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, targetW, targetH);
-          ctx.drawImage(img, 0, 0, targetW, targetH);
-
-          var dataUrl = canvas.toDataURL("image/jpeg", quality);
-          var base64 = dataUrl.split(",")[1];
-          resolve({ mediaType: "image/jpeg", data: base64 });
-        };
-        img.onerror = function () {
-          URL.revokeObjectURL(url);
-          reject({ code: "image_rejected" });
-        };
-        img.src = url;
-      });
-    }
-
-    // In a Claude viewer the page asks Claude directly. When the same files are served by
-    // server.js (see README) the page posts the image to /api/extract instead.
-    async function extract(file, signal) {
-      if (sampleFn && canSendImages) {
-        var raw = await sampleFn.json(PROMPT, {
-          images: file,
-          modelTier: "quick",
-          signal: signal,
-        });
-        return LM.normalizeExtraction(raw);
-      }
-      var optimized = await downscaleImage(file, 1600, 0.85);
-      var base =
-        typeof window !== "undefined" && window.LABEL_CHECK_API
-          ? window.LABEL_CHECK_API.replace(/\/+$/, "")
-          : "";
-      var url = base ? base + "/api/extract" : "api/extract";
-      var res;
-      try {
-        res = await fetch(url, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          signal: signal,
-          body: JSON.stringify({
-            mediaType: optimized.mediaType,
-            data: optimized.data,
-            prompt: PROMPT,
-          }),
-        });
-      } catch (e) {
-        if (e && e.name === "AbortError") throw { code: "cancelled" };
-        throw { code: "no_reader" };
-      }
-      if (!res.ok)
-        throw { code: res.status === 429 ? "rate_limited" : "no_reader" };
-      return LM.normalizeExtraction(await res.json());
-    }
-
-    function errorCopy(e) {
-      switch (e && e.code) {
-        case "cancelled":
-          return "";
-        case "not_granted":
-          return "Reading labels was not allowed. Choose Allow when asked, then try again.";
-        case "rate_limited":
-          return "Too many labels were sent at once. Wait a minute, then check again.";
-        case "image_rejected":
-          return "This image could not be opened. Use a JPG, PNG, WebP or GIF under 20 MB.";
-        case "session_expired":
-          return "Your sign-in expired. Sign in again, then try again.";
-        case "invalid_json":
-        case "empty_completion":
-        case "refused":
-          return "The label could not be read. Try a sharper image, taken straight on.";
-        case "no_reader":
-        case "sampling_disabled":
-        case "images_unavailable":
-        case "capability_disabled":
-          return "Label reading is not available here. Open this page in Claude, or run the included server (see the README).";
-        default:
-          return "Something went wrong while reading the label. Try again.";
-      }
-    }
-
-    function checkFile(file) {
-      if (!file) return "Choose a label image first.";
-      if (ALLOWED.indexOf(file.type) === -1)
-        return "That file type is not supported. Use JPG, PNG, WebP or GIF. iPhone HEIC photos need to be shared as JPEG.";
-      if (file.size > 20 * 1024 * 1024)
-        return "That image is larger than 20 MB. Use a smaller image.";
-      return "";
-    }
-
-    // ---------------------------------------------------------------- rendering results
-    var STATUS = {
-      pass: { icon: "✓", text: "Matches", cls: "ok" },
-      review: { icon: "!", text: "Check", cls: "warn" },
-      fail: { icon: "✕", text: "Doesn't match", cls: "bad" },
-      skip: { icon: "–", text: "Not compared", cls: "muted" },
-    };
-    var VERDICT = {
-      match: { icon: "✓", title: "Matches the application", cls: "ok" },
-      review: { icon: "!", title: "Needs a person to look", cls: "warn" },
-      mismatch: {
-        icon: "✕",
-        title: "Does not match the application",
-        cls: "bad",
-      },
-    };
-
-    function chip(status, override) {
-      var s = STATUS[status] || STATUS.skip;
-      return h(
-        "span",
-        { class: "chip chip-" + s.cls },
-        h("span", { class: "chip-icon", "aria-hidden": "true", text: s.icon }),
-        override || s.text,
-      );
-    }
-
-    function renderResult(container, res) {
-      container.replaceChildren();
-      var v = VERDICT[res.verdict],
-        c = res.counts,
-        parts = [];
-      if (c.fail)
-        parts.push(c.fail + (c.fail === 1 ? " problem" : " problems"));
-      if (c.review) parts.push(c.review + " to check");
-      parts.push(c.pass + " passed");
-      if (res.ms) parts.push("checked in " + (res.ms / 1000).toFixed(1) + " s");
-
-      container.appendChild(
-        h(
-          "div",
-          { class: "banner banner-" + v.cls },
-          h("div", {
-            class: "banner-icon",
-            "aria-hidden": "true",
-            text: v.icon,
-          }),
-          h(
-            "div",
-            null,
-            h("div", { class: "banner-title", text: v.title }),
-            h("div", { class: "banner-sub", text: parts.join(" · ") }),
-          ),
-        ),
-      );
-
-      if (
-        res.imageQuality === "poor" ||
-        (res.imageQuality === "fair" && res.notes) ||
-        (res.notes && res.verdict !== "match")
-      ) {
-        container.appendChild(
-          h(
-            "div",
-            { class: "notice" },
-            res.imageQuality === "poor"
-              ? "The image is hard to read, so some items could not be checked. Ask for a clearer photo. "
-              : "",
-            res.notes || "",
-          ),
-        );
-      }
-
-      var table = h(
-        "div",
-        { class: "ftable" },
-        h(
-          "div",
-          { class: "frow fhead" },
-          h("div", { text: "Item" }),
-          h("div", { text: "Application" }),
-          h("div", { text: "On the label" }),
-          h("div", { text: "Result" }),
-        ),
-      );
-      res.fields.forEach(function (f) {
-        table.appendChild(
-          h(
-            "div",
-            { class: "frow" },
-            h("div", { class: "fname", text: f.label }),
-            h("div", {
-              class: "fcell",
-              "data-l": "Application",
-              text: f.expected || "—",
-            }),
-            h("div", {
-              class: "fcell mono",
-              "data-l": "On the label",
-              text: f.found || "Not found",
-            }),
-            h(
-              "div",
-              null,
-              chip(
-                f.status,
-                f.status === "fail" && !f.found ? "Not found" : null,
-              ),
-              f.note ? h("div", { class: "note", text: f.note }) : null,
-            ),
-          ),
-        );
-      });
-      container.appendChild(
-        h(
-          "section",
-          { class: "panel" },
-          h("h3", { text: "Label details" }),
-          table,
-        ),
-      );
-
-      var list = h("ul", { class: "wlist" });
-      res.warning.checks.forEach(function (k) {
-        list.appendChild(
-          h(
-            "li",
-            null,
-            chip(k.status),
-            h("span", { text: k.label }),
-            k.note ? h("span", { class: "wnote", text: k.note }) : null,
-          ),
-        );
-      });
-      var wsec = h(
-        "section",
-        { class: "panel" },
-        h("h3", { text: "Government warning" }),
-        list,
-      );
-      if (res.warning.diff) {
-        var d = h("div", {
-          class: "diff",
-          "aria-label": "Warning text compared with the required wording",
-        });
-        res.warning.diff.forEach(function (o) {
-          if (o.t === "same") d.appendChild(document.createTextNode(o.w + " "));
-          else if (o.t === "missing") {
-            d.appendChild(
-              h("del", { title: "Required but not on the label", text: o.w }),
-            );
-            d.appendChild(document.createTextNode(" "));
-          } else {
-            d.appendChild(
-              h("ins", {
-                title: "On the label but not in the required wording",
-                text: o.w,
-              }),
-            );
-            d.appendChild(document.createTextNode(" "));
-          }
-        });
-        wsec.appendChild(
-          h("p", {
-            class: "hint",
-            style: "margin-top:12px",
-            text: "Compared with the required wording. Struck-through words are missing or changed on the label. Underlined words should not be there.",
-          }),
-        );
-        wsec.appendChild(d);
-      }
-      wsec.appendChild(
-        h(
-          "details",
-          { style: "margin-top:10px" },
-          h("summary", { text: "Show the required wording" }),
-          h("p", { text: LM.WARNING_TEXT }),
-        ),
-      );
-      container.appendChild(wsec);
-    }
-
-    // ---------------------------------------------------------------- sample labels (drawn in the page)
-    var STD = LM.WARNING_TEXT;
-    var SAMPLES = [
-      {
-        id: "old-tom",
-        title: "Old Tom Distillery: everything correct",
-        file: "sample-old-tom.png",
-        label: {
-          brand: "OLD TOM DISTILLERY",
-          cls: "Kentucky Straight Bourbon Whiskey",
-          abv: "45% Alc./Vol. (90 Proof)",
-          net: "750 mL",
-          bottler: "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
-          warn: STD,
-          heading: "GOVERNMENT WARNING:",
-          bold: true,
-        },
-        exp: {
-          brand: "OLD TOM DISTILLERY",
-          classType: "Kentucky Straight Bourbon Whiskey",
-          abv: "45%",
-          net: "750 mL",
-          bottler: "Old Tom Distillery, Bardstown, KY",
-          country: "",
-        },
-      },
-      {
-        id: "title-case",
-        title: "Old Tom Distillery: warning heading in title case",
-        file: "sample-title-case.png",
-        label: {
-          brand: "OLD TOM DISTILLERY",
-          cls: "Kentucky Straight Bourbon Whiskey",
-          abv: "45% Alc./Vol. (90 Proof)",
-          net: "750 mL",
-          bottler: "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
-          warn: STD.replace("GOVERNMENT WARNING:", "Government Warning:"),
-          heading: "Government Warning:",
-          bold: true,
-        },
-        exp: {
-          brand: "OLD TOM DISTILLERY",
-          classType: "Kentucky Straight Bourbon Whiskey",
-          abv: "45%",
-          net: "750 mL",
-          bottler: "Old Tom Distillery, Bardstown, KY",
-          country: "",
-        },
-      },
-      {
-        id: "wrong-abv",
-        title: "Old Tom Distillery: label says 40%, application says 45%",
-        file: "sample-wrong-abv.png",
-        label: {
-          brand: "OLD TOM DISTILLERY",
-          cls: "Kentucky Straight Bourbon Whiskey",
-          abv: "40% Alc./Vol. (80 Proof)",
-          net: "750 mL",
-          bottler: "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
-          warn: STD,
-          heading: "GOVERNMENT WARNING:",
-          bold: true,
-        },
-        exp: {
-          brand: "OLD TOM DISTILLERY",
-          classType: "Kentucky Straight Bourbon Whiskey",
-          abv: "45%",
-          net: "750 mL",
-          bottler: "Old Tom Distillery, Bardstown, KY",
-          country: "",
-        },
-      },
-      {
-        id: "stone",
-        title: "Stone's Throw: capitalization differs from the application",
-        file: "sample-stones-throw.png",
-        label: {
-          brand: "STONE'S THROW",
-          cls: "Straight Rye Whiskey",
-          abv: "47% Alc./Vol. (94 Proof)",
-          net: "750 mL",
-          bottler: "Bottled by Stone's Throw Distilling Co., Bardstown, KY",
-          warn: STD,
-          heading: "GOVERNMENT WARNING:",
-          bold: true,
-        },
-        exp: {
-          brand: "Stone's Throw",
-          classType: "Straight Rye Whiskey",
-          abv: "47%",
-          net: "750 mL",
-          bottler: "Stone's Throw Distilling Co., Bardstown, KY",
-          country: "",
-        },
-      },
-      {
-        id: "reworded",
-        title: "Harbor Gin: warning reworded and heading not bold",
-        file: "sample-reworded-warning.png",
-        label: {
-          brand: "HARBOR GIN",
-          cls: "London Dry Gin",
-          abv: "42% Alc./Vol. (84 Proof)",
-          net: "1 L",
-          bottler: "Produced and bottled by Harbor Spirits Co., Portland, ME",
-          warn: STD.replace("impairs your ability", "may impair your ability"),
-          heading: "GOVERNMENT WARNING:",
-          bold: false,
-        },
-        exp: {
-          brand: "HARBOR GIN",
-          classType: "London Dry Gin",
-          abv: "42%",
-          net: "1 L",
-          bottler: "Harbor Spirits Co., Portland, ME",
-          country: "",
-        },
-      },
-    ];
-
-    function wrapLines(ctx, text, maxW) {
-      var out = [],
-        line = "";
-      text.split(" ").forEach(function (w) {
-        var t = line ? line + " " + w : w;
-        if (ctx.measureText(t).width > maxW && line) {
-          out.push(line);
-          line = w;
-        } else line = t;
-      });
-      if (line) out.push(line);
-      return out;
-    }
-
-    function drawLabel(s, fileName) {
-      return new Promise(function (resolve) {
-        var W = 900,
-          H = 1280,
-          cv = document.createElement("canvas");
-        cv.width = W;
-        cv.height = H;
-        var x = cv.getContext("2d"),
-          ink = "#2a1d12",
-          cx = W / 2,
-          y;
-        x.fillStyle = "#e9e0c8";
-        x.fillRect(0, 0, W, H);
-        x.strokeStyle = ink;
-        x.lineWidth = 6;
-        x.strokeRect(34, 34, W - 68, H - 68);
-        x.lineWidth = 2;
-        x.strokeRect(48, 48, W - 96, H - 96);
-        x.fillStyle = ink;
-        x.textAlign = "center";
-        x.textBaseline = "alphabetic";
-
-        x.font = "bold 76px Georgia, serif";
-        y = 200;
-        wrapLines(x, s.brand, 720).forEach(function (l) {
-          x.fillText(l, cx, y);
-          y += 88;
-        });
-        x.fillRect(cx - 120, y - 40, 240, 4);
-        x.font = "italic 36px Georgia, serif";
-        y += 24;
-        wrapLines(x, s.cls, 720).forEach(function (l) {
-          x.fillText(l, cx, y);
-          y += 46;
-        });
-
-        y += 40;
-        x.font = "bold 42px Arial, sans-serif";
-        x.fillText(s.abv, cx, y);
-        y += 58;
-        x.font = "34px Arial, sans-serif";
-        x.fillText(s.net, cx, y);
-        y += 70;
-        x.font = "26px Arial, sans-serif";
-        wrapLines(x, s.bottler, 700).forEach(function (l) {
-          x.fillText(l, cx, y);
-          y += 34;
-        });
-
-        // warning: heading in its own weight, body in regular, wrapped together
-        x.textAlign = "left";
-        y = Math.max(y + 60, 860);
-        var hw = s.heading.split(" "),
-          bw = s.warn.slice(s.heading.length).trim().split(" ");
-        var items = hw
-          .map(function (w) {
-            return {
-              w: w,
-              f: (s.bold ? "bold " : "") + "21px Arial, sans-serif",
+        function toBase64(file) {
+          return new Promise(function (resolve, reject) {
+            var r = new FileReader();
+            r.onload = function () {
+              resolve(String(r.result).split(",")[1]);
             };
-          })
-          .concat(
-            bw.map(function (w) {
-              return { w: w, f: "21px Arial, sans-serif" };
-            }),
-          );
-        var lx = 90,
-          maxX = W - 90,
-          px = lx;
-        items.forEach(function (it) {
-          x.font = it.f;
-          var w = x.measureText(it.w + " ").width;
-          if (px + w > maxX + 6) {
-            px = lx;
-            y += 30;
+            r.onerror = function () {
+              reject({ code: "image_rejected" });
+            };
+            r.readAsDataURL(file);
+          });
+        }
+
+        function downscaleImage(file, maxDim, quality) {
+          maxDim = maxDim || 1600;
+          quality = quality || 0.85;
+          return new Promise(function (resolve, reject) {
+            var img = new Image();
+            var url = URL.createObjectURL(file);
+            img.onload = function () {
+              URL.revokeObjectURL(url);
+              var w = img.naturalWidth || img.width;
+              var h = img.naturalHeight || img.height;
+              if (!w || !h) {
+                toBase64(file)
+                  .then(function (data) {
+                    resolve({ mediaType: file.type, data: data });
+                  })
+                  .catch(reject);
+                return;
+              }
+              var scale = Math.min(1, maxDim / Math.max(w, h));
+              var targetW = Math.round(w * scale);
+              var targetH = Math.round(h * scale);
+
+              var canvas = document.createElement("canvas");
+              canvas.width = targetW;
+              canvas.height = targetH;
+              var ctx = canvas.getContext("2d");
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, targetW, targetH);
+              ctx.drawImage(img, 0, 0, targetW, targetH);
+
+              var dataUrl = canvas.toDataURL("image/jpeg", quality);
+              var base64 = dataUrl.split(",")[1];
+              resolve({ mediaType: "image/jpeg", data: base64 });
+            };
+            img.onerror = function () {
+              URL.revokeObjectURL(url);
+              reject({ code: "image_rejected" });
+            };
+            img.src = url;
+          });
+        }
+
+        // In a Claude viewer the page asks Claude directly. When the same files are served by
+        // server.js (see README) the page posts the image to /api/extract instead.
+        async function extract(file, signal) {
+          if (sampleFn && canSendImages) {
+            var raw = await sampleFn.json(PROMPT, {
+              images: file,
+              modelTier: "quick",
+              signal: signal,
+            });
+            return LM.normalizeExtraction(raw);
           }
-          x.fillText(it.w, px, y);
-          px += w;
-        });
-        cv.toBlob(function (b) {
-          resolve(new File([b], fileName, { type: "image/png" }));
-        }, "image/png");
-      });
-    }
+          var optimized = await downscaleImage(file, 1600, 0.85);
+          var base =
+            typeof window !== "undefined" && window.LABEL_CHECK_API
+              ? window.LABEL_CHECK_API.replace(/\/+$/, "")
+              : "";
+          var url = base ? base + "/api/extract" : "api/extract";
+          var res;
+          try {
+            res = await fetch(url, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              signal: signal,
+              body: JSON.stringify({
+                mediaType: optimized.mediaType,
+                data: optimized.data,
+                prompt: PROMPT,
+              }),
+            });
+          } catch (e) {
+            if (e && e.name === "AbortError") throw { code: "cancelled" };
+            throw { code: "no_reader" };
+          }
+          if (!res.ok)
+            throw { code: res.status === 429 ? "rate_limited" : "no_reader" };
+          return LM.normalizeExtraction(await res.json());
+        }
 
-    // ---------------------------------------------------------------- one label
-    var one = { file: null, url: null, ctl: null, timer: null, busy: false };
-    var FIELDS = [
-      ["brand", "f-brand"],
-      ["classType", "f-class"],
-      ["abv", "f-abv"],
-      ["net", "f-net"],
-      ["bottler", "f-bottler"],
-      ["country", "f-country"],
-    ];
+        function errorCopy(e) {
+          switch (e && e.code) {
+            case "cancelled":
+              return "";
+            case "not_granted":
+              return "Reading labels was not allowed. Choose Allow when asked, then try again.";
+            case "rate_limited":
+              return "Too many labels were sent at once. Wait a minute, then check again.";
+            case "image_rejected":
+              return "This image could not be opened. Use a JPG, PNG, WebP or GIF under 20 MB.";
+            case "session_expired":
+              return "Your sign-in expired. Sign in again, then try again.";
+            case "invalid_json":
+            case "empty_completion":
+            case "refused":
+              return "The label could not be read. Try a sharper image, taken straight on.";
+            case "no_reader":
+            case "sampling_disabled":
+            case "images_unavailable":
+            case "capability_disabled":
+              return "Label reading is not available here. Open this page in Claude, or run the included server (see the README).";
+            default:
+              return "Something went wrong while reading the label. Try again.";
+          }
+        }
 
-    function readForm() {
-      var e = {};
-      FIELDS.forEach(function (f) {
-        e[f[0]] = $(f[1]).value;
-      });
-      if (!$("f-imported").checked) e.country = "";
-      return e;
-    }
-    function fillForm(e) {
-      FIELDS.forEach(function (f) {
-        $(f[1]).value = e[f[0]] || "";
-      });
-      $("f-imported").checked = !!e.country;
-      $("country-field").hidden = !e.country;
-    }
-    function missingRequired(e) {
-      var m = [];
-      if (!e.brand.trim())
-        m.push([
-          "e-brand",
-          "f-brand",
-          "Enter the brand name from the application.",
-        ]);
-      if (!e.classType.trim())
-        m.push(["e-class", "f-class", "Enter the class or type."]);
-      if (!e.abv.trim())
-        m.push(["e-abv", "f-abv", "Enter the alcohol content."]);
-      if (!e.net.trim()) m.push(["e-net", "f-net", "Enter the net contents."]);
-      return m;
-    }
-    function clearErrors() {
-      ["brand", "class", "abv", "net"].forEach(function (k) {
-        $("e-" + k).textContent = "";
-        $("f-" + k).removeAttribute("aria-invalid");
-      });
-    }
+        function checkFile(file) {
+          if (!file) return "Choose a label image first.";
+          if (ALLOWED.indexOf(file.type) === -1)
+            return "That file type is not supported. Use JPG, PNG, WebP or GIF. iPhone HEIC photos need to be shared as JPEG.";
+          if (file.size > 20 * 1024 * 1024)
+            return "That image is larger than 20 MB. Use a smaller image.";
+          return "";
+        }
 
-    function setOneFile(file, name) {
-      if (one.url) URL.revokeObjectURL(one.url);
-      one.file = file;
-      one.url = URL.createObjectURL(file);
-      $("preview").src = one.url;
-      $("file-name").textContent = name || file.name;
-      $("check-one").disabled = false;
-    }
-
-    function setBusy(on) {
-      one.busy = on;
-      var b = $("check-one");
-      b.textContent = on ? "Stop" : "Check label";
-      b.classList.toggle("btn-secondary", on);
-      b.classList.toggle("btn-primary", !on);
-      if (on) {
-        var t0 = performance.now();
-        one.timer = setInterval(function () {
-          $("status-one").textContent =
-            "Reading the label… " +
-            ((performance.now() - t0) / 1000).toFixed(1) +
-            " s";
-        }, 100);
-      } else {
-        clearInterval(one.timer);
-      }
-    }
-
-    async function runOne() {
-      if (one.busy) {
-        if (one.ctl) one.ctl.abort();
-        return;
-      }
-      clearErrors();
-      var problem = checkFile(one.file);
-      if (problem) {
-        $("status-one").textContent = problem;
-        return;
-      }
-      var exp = readForm(),
-        miss = missingRequired(exp);
-      if (miss.length) {
-        miss.forEach(function (m) {
-          $(m[0]).textContent = m[2];
-          $(m[1]).setAttribute("aria-invalid", "true");
-        });
-        $(miss[0][1]).focus();
-        $("status-one").textContent = "";
-        return;
-      }
-      one.ctl = new AbortController();
-      setBusy(true);
-      var t0 = performance.now();
-      try {
-        var ex = await extract(one.file, one.ctl.signal);
-        var res = LM.verify(exp, ex);
-        res.ms = performance.now() - t0;
-        renderResult($("result-one"), res);
-        $("status-one").textContent = "";
-      } catch (e) {
-        $("status-one").textContent = errorCopy(e);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    // ---------------------------------------------------------------- batch
-    var batch = { rows: [], seq: 0, running: false, ctl: null, filter: "all" };
-    var BFIELDS = [
-      ["brand", "Brand name"],
-      ["classType", "Class / type"],
-      ["abv", "Alcohol content"],
-      ["net", "Net contents"],
-      ["bottler", "Bottler / producer"],
-      ["country", "Country (imports only)"],
-    ];
-
-    function addRow(file, exp) {
-      var row = {
-        id: ++batch.seq,
-        file: file,
-        url: URL.createObjectURL(file),
-        exp: Object.assign(
-          {
-            brand: "",
-            classType: "",
-            abv: "",
-            net: "",
-            bottler: "",
-            country: "",
+        // ---------------------------------------------------------------- rendering results
+        var STATUS = {
+          pass: { icon: "✓", text: "Matches", cls: "ok" },
+          review: { icon: "!", text: "Check", cls: "warn" },
+          fail: { icon: "✕", text: "Doesn't match", cls: "bad" },
+          skip: { icon: "–", text: "Not compared", cls: "muted" },
+        };
+        var VERDICT = {
+          match: { icon: "✓", title: "Matches the application", cls: "ok" },
+          review: { icon: "!", title: "Needs a person to look", cls: "warn" },
+          mismatch: {
+            icon: "✕",
+            title: "Does not match the application",
+            cls: "bad",
           },
-          exp || {},
-        ),
-        status: "idle",
-        res: null,
-        err: "",
-        dirty: false,
-        els: {},
-      };
-      batch.rows.push(row);
-      return row;
-    }
+        };
 
-    function rowState(row) {
-      if (row.status === "running") return "running";
-      if (row.status === "error") return "error";
-      if (row.status === "done") return row.res.verdict;
-      return "idle";
-    }
-
-    function buildRow(row) {
-      var inputs = h("div", { class: "binputs" });
-      BFIELDS.forEach(function (f) {
-        var id = "r" + row.id + "-" + f[0];
-        var input = h("input", {
-          type: "text",
-          id: id,
-          value: row.exp[f[0]] || "",
-        });
-        input.addEventListener("input", function () {
-          row.exp[f[0]] = input.value;
-          if (row.status === "done") row.dirty = true;
-        });
-        inputs.appendChild(
-          h(
-            "div",
-            { class: "field" },
-            h("label", { for: id, text: f[1] }),
-            input,
-          ),
-        );
-      });
-      var statusEl = h("div"),
-        detail = h("div", { class: "bdetail", hidden: true });
-      var toggle = h("button", {
-        class: "btn btn-quiet",
-        type: "button",
-        hidden: true,
-        text: "Details",
-        "aria-expanded": "false",
-      });
-      toggle.addEventListener("click", function () {
-        detail.hidden = !detail.hidden;
-        toggle.setAttribute("aria-expanded", String(!detail.hidden));
-        toggle.textContent = detail.hidden ? "Details" : "Hide details";
-      });
-      var remove = h("button", {
-        class: "btn btn-quiet",
-        type: "button",
-        text: "Remove",
-      });
-      remove.addEventListener("click", function () {
-        URL.revokeObjectURL(row.url);
-        batch.rows = batch.rows.filter(function (r) {
-          return r !== row;
-        });
-        row.el.remove();
-        refreshBatch();
-      });
-      row.els = { status: statusEl, detail: detail, toggle: toggle };
-      row.el = h(
-        "div",
-        { class: "brow" },
-        h(
-          "div",
-          { class: "bthumb" },
-          h("img", { src: row.url, alt: "Label " + row.file.name }),
-        ),
-        h(
-          "div",
-          null,
-          h("div", { class: "bfile", text: row.file.name }),
-          inputs,
-        ),
-        h("div", { class: "bstat" }, statusEl, toggle, remove),
-        detail,
-      );
-      paintRow(row);
-      return row.el;
-    }
-
-    function paintRow(row) {
-      var s = rowState(row),
-        el = row.els.status;
-      el.replaceChildren();
-      if (s === "idle")
-        el.appendChild(h("span", { class: "hint", text: "Not checked yet" }));
-      else if (s === "running")
-        el.appendChild(h("span", { class: "hint", text: "Reading…" }));
-      else if (s === "error")
-        el.appendChild(
-          h(
+        function chip(status, override) {
+          var s = STATUS[status] || STATUS.skip;
+          return h(
             "span",
-            { class: "chip chip-bad" },
-            h("span", { class: "chip-icon", "aria-hidden": "true", text: "✕" }),
-            row.err || "Error",
-          ),
-        );
-      else {
-        var v = VERDICT[s];
-        el.appendChild(
-          h(
-            "span",
-            { class: "chip chip-" + v.cls },
+            { class: "chip chip-" + s.cls },
             h("span", {
               class: "chip-icon",
               "aria-hidden": "true",
-              text: v.icon,
+              text: s.icon,
             }),
-            v.title.replace(" the application", ""),
-          ),
-        );
-        el.appendChild(
-          h("div", {
-            class: "note",
-            text:
-              row.res.counts.fail +
-              " problem" +
-              (row.res.counts.fail === 1 ? "" : "s") +
-              ", " +
-              row.res.counts.review +
-              " to check",
-          }),
-        );
-      }
-      row.els.toggle.hidden = s !== "done";
-      if (s === "done") renderResult(row.els.detail, row.res);
-      applyFilter();
-    }
+            override || s.text,
+          );
+        }
 
-    function renderBatch() {
-      var box = $("brows");
-      box.replaceChildren();
-      if (!batch.rows.length) {
-        box.appendChild(
-          h("div", {
-            class: "empty",
-            text: "No labels yet. Choose images or add the sample labels to see how a batch works.",
-          }),
-        );
-      } else
-        batch.rows.forEach(function (r) {
-          box.appendChild(buildRow(r));
-        });
-      refreshBatch();
-    }
+        function renderResult(container, res) {
+          container.replaceChildren();
+          var v = VERDICT[res.verdict],
+            c = res.counts,
+            parts = [];
+          if (c.fail)
+            parts.push(c.fail + (c.fail === 1 ? " problem" : " problems"));
+          if (c.review) parts.push(c.review + " to check");
+          parts.push(c.pass + " passed");
+          if (res.ms)
+            parts.push("checked in " + (res.ms / 1000).toFixed(1) + " s");
 
-    function counts() {
-      var c = {
-        all: batch.rows.length,
-        match: 0,
-        review: 0,
-        mismatch: 0,
-        error: 0,
-      };
-      batch.rows.forEach(function (r) {
-        var s = rowState(r);
-        if (c[s] !== undefined) c[s]++;
-      });
-      return c;
-    }
+          container.appendChild(
+            h(
+              "div",
+              { class: "banner banner-" + v.cls },
+              h("div", {
+                class: "banner-icon",
+                "aria-hidden": "true",
+                text: v.icon,
+              }),
+              h(
+                "div",
+                null,
+                h("div", { class: "banner-title", text: v.title }),
+                h("div", { class: "banner-sub", text: parts.join(" · ") }),
+              ),
+            ),
+          );
 
-    function refreshBatch() {
-      var c = counts(),
-        any = c.match + c.review + c.mismatch + c.error > 0;
-      $("check-batch").disabled = !batch.rows.length || batch.running;
-      $("summary").hidden = !any;
-      var f = $("filters");
-      f.replaceChildren();
-      [
-        ["all", "All"],
-        ["mismatch", "Doesn't match"],
-        ["review", "Needs a look"],
-        ["match", "Matches"],
-        ["error", "Errors"],
-      ].forEach(function (p) {
-        if (p[0] === "error" && !c.error) return;
-        var b = h("button", {
-          class: "filter",
-          type: "button",
-          "aria-pressed": String(batch.filter === p[0]),
-          text: p[1] + " (" + c[p[0]] + ")",
-        });
-        b.addEventListener("click", function () {
-          batch.filter = p[0];
-          refreshBatch();
-        });
-        f.appendChild(b);
-      });
-      applyFilter();
-    }
+          if (
+            res.imageQuality === "poor" ||
+            (res.imageQuality === "fair" && res.notes) ||
+            (res.notes && res.verdict !== "match")
+          ) {
+            container.appendChild(
+              h(
+                "div",
+                { class: "notice" },
+                res.imageQuality === "poor"
+                  ? "The image is hard to read, so some items could not be checked. Ask for a clearer photo. "
+                  : "",
+                res.notes || "",
+              ),
+            );
+          }
 
-    function applyFilter() {
-      batch.rows.forEach(function (r) {
-        if (r.el)
-          r.el.hidden = batch.filter !== "all" && rowState(r) !== batch.filter;
-      });
-    }
+          var table = h(
+            "div",
+            { class: "ftable" },
+            h(
+              "div",
+              { class: "frow fhead" },
+              h("div", { text: "Item" }),
+              h("div", { text: "Application" }),
+              h("div", { text: "On the label" }),
+              h("div", { text: "Result" }),
+            ),
+          );
+          res.fields.forEach(function (f) {
+            table.appendChild(
+              h(
+                "div",
+                { class: "frow" },
+                h("div", { class: "fname", text: f.label }),
+                h("div", {
+                  class: "fcell",
+                  "data-l": "Application",
+                  text: f.expected || "—",
+                }),
+                h("div", {
+                  class: "fcell mono",
+                  "data-l": "On the label",
+                  text: f.found || "Not found",
+                }),
+                h(
+                  "div",
+                  null,
+                  chip(
+                    f.status,
+                    f.status === "fail" && !f.found ? "Not found" : null,
+                  ),
+                  f.note ? h("div", { class: "note", text: f.note }) : null,
+                ),
+              ),
+            );
+          });
+          container.appendChild(
+            h(
+              "section",
+              { class: "panel" },
+              h("h3", { text: "Label details" }),
+              table,
+            ),
+          );
 
-    async function runBatch() {
-      var todo = batch.rows.filter(function (r) {
-        return r.status !== "done" || r.dirty;
-      });
-      if (!todo.length) {
-        $("progress").textContent =
-          "Everything is already checked. Change a row to check it again.";
-        return;
-      }
-      batch.running = true;
-      batch.ctl = new AbortController();
-      $("check-batch").disabled = true;
-      $("stop-batch").hidden = false;
-      var total = todo.length,
-        finished = 0,
-        next = 0,
-        halted = false,
-        t0 = performance.now();
-      function tick() {
-        $("progress").textContent =
-          "Checked " +
-          finished +
-          " of " +
-          total +
-          " · " +
-          ((performance.now() - t0) / 1000).toFixed(0) +
-          " s";
-      }
-      tick();
-
-      async function worker() {
-        while (!halted && !batch.ctl.signal.aborted && next < todo.length) {
-          var row = todo[next++];
-          var problem = checkFile(row.file),
-            miss = missingRequired(row.exp);
-          if (problem || miss.length) {
-            row.status = "error";
-            row.err =
-              problem ||
-              "Fill in brand, class, alcohol content and net contents.";
-          } else {
-            row.status = "running";
-            paintRow(row);
-            var rt0 = performance.now();
-            try {
-              var ex = await extract(row.file, batch.ctl.signal);
-              row.res = LM.verify(Object.assign({}, row.exp), ex);
-              row.res.ms = performance.now() - rt0;
-              row.status = "done";
-              row.dirty = false;
-            } catch (e) {
-              if (e && e.code === "cancelled") {
-                row.status = "idle";
-                paintRow(row);
-                return;
+          var list = h("ul", { class: "wlist" });
+          res.warning.checks.forEach(function (k) {
+            list.appendChild(
+              h(
+                "li",
+                null,
+                chip(k.status),
+                h("span", { text: k.label }),
+                k.note ? h("span", { class: "wnote", text: k.note }) : null,
+              ),
+            );
+          });
+          var wsec = h(
+            "section",
+            { class: "panel" },
+            h("h3", { text: "Government warning" }),
+            list,
+          );
+          if (res.warning.diff) {
+            var d = h("div", {
+              class: "diff",
+              "aria-label": "Warning text compared with the required wording",
+            });
+            res.warning.diff.forEach(function (o) {
+              if (o.t === "same")
+                d.appendChild(document.createTextNode(o.w + " "));
+              else if (o.t === "missing") {
+                d.appendChild(
+                  h("del", {
+                    title: "Required but not on the label",
+                    text: o.w,
+                  }),
+                );
+                d.appendChild(document.createTextNode(" "));
+              } else {
+                d.appendChild(
+                  h("ins", {
+                    title: "On the label but not in the required wording",
+                    text: o.w,
+                  }),
+                );
+                d.appendChild(document.createTextNode(" "));
               }
-              row.status = "error";
-              row.err = errorCopy(e);
-              if (
-                e &&
-                (e.code === "rate_limited" ||
-                  e.code === "not_granted" ||
-                  e.code === "no_reader" ||
-                  e.code === "sampling_disabled")
-              )
-                halted = true;
+            });
+            wsec.appendChild(
+              h("p", {
+                class: "hint",
+                style: "margin-top:12px",
+                text: "Compared with the required wording. Struck-through words are missing or changed on the label. Underlined words should not be there.",
+              }),
+            );
+            wsec.appendChild(d);
+          }
+          wsec.appendChild(
+            h(
+              "details",
+              { style: "margin-top:10px" },
+              h("summary", { text: "Show the required wording" }),
+              h("p", { text: LM.WARNING_TEXT }),
+            ),
+          );
+          container.appendChild(wsec);
+        }
+
+        // ---------------------------------------------------------------- sample labels (drawn in the page)
+        var STD = LM.WARNING_TEXT;
+        var SAMPLES = [
+          {
+            id: "old-tom",
+            title: "Old Tom Distillery: everything correct",
+            file: "sample-old-tom.png",
+            label: {
+              brand: "OLD TOM DISTILLERY",
+              cls: "Kentucky Straight Bourbon Whiskey",
+              abv: "45% Alc./Vol. (90 Proof)",
+              net: "750 mL",
+              bottler:
+                "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
+              warn: STD,
+              heading: "GOVERNMENT WARNING:",
+              bold: true,
+            },
+            exp: {
+              brand: "OLD TOM DISTILLERY",
+              classType: "Kentucky Straight Bourbon Whiskey",
+              abv: "45%",
+              net: "750 mL",
+              bottler: "Old Tom Distillery, Bardstown, KY",
+              country: "",
+            },
+          },
+          {
+            id: "title-case",
+            title: "Old Tom Distillery: warning heading in title case",
+            file: "sample-title-case.png",
+            label: {
+              brand: "OLD TOM DISTILLERY",
+              cls: "Kentucky Straight Bourbon Whiskey",
+              abv: "45% Alc./Vol. (90 Proof)",
+              net: "750 mL",
+              bottler:
+                "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
+              warn: STD.replace("GOVERNMENT WARNING:", "Government Warning:"),
+              heading: "Government Warning:",
+              bold: true,
+            },
+            exp: {
+              brand: "OLD TOM DISTILLERY",
+              classType: "Kentucky Straight Bourbon Whiskey",
+              abv: "45%",
+              net: "750 mL",
+              bottler: "Old Tom Distillery, Bardstown, KY",
+              country: "",
+            },
+          },
+          {
+            id: "wrong-abv",
+            title: "Old Tom Distillery: label says 40%, application says 45%",
+            file: "sample-wrong-abv.png",
+            label: {
+              brand: "OLD TOM DISTILLERY",
+              cls: "Kentucky Straight Bourbon Whiskey",
+              abv: "40% Alc./Vol. (80 Proof)",
+              net: "750 mL",
+              bottler:
+                "Distilled and bottled by Old Tom Distillery, Bardstown, KY",
+              warn: STD,
+              heading: "GOVERNMENT WARNING:",
+              bold: true,
+            },
+            exp: {
+              brand: "OLD TOM DISTILLERY",
+              classType: "Kentucky Straight Bourbon Whiskey",
+              abv: "45%",
+              net: "750 mL",
+              bottler: "Old Tom Distillery, Bardstown, KY",
+              country: "",
+            },
+          },
+          {
+            id: "stone",
+            title: "Stone's Throw: capitalization differs from the application",
+            file: "sample-stones-throw.png",
+            label: {
+              brand: "STONE'S THROW",
+              cls: "Straight Rye Whiskey",
+              abv: "47% Alc./Vol. (94 Proof)",
+              net: "750 mL",
+              bottler: "Bottled by Stone's Throw Distilling Co., Bardstown, KY",
+              warn: STD,
+              heading: "GOVERNMENT WARNING:",
+              bold: true,
+            },
+            exp: {
+              brand: "Stone's Throw",
+              classType: "Straight Rye Whiskey",
+              abv: "47%",
+              net: "750 mL",
+              bottler: "Stone's Throw Distilling Co., Bardstown, KY",
+              country: "",
+            },
+          },
+          {
+            id: "reworded",
+            title: "Harbor Gin: warning reworded and heading not bold",
+            file: "sample-reworded-warning.png",
+            label: {
+              brand: "HARBOR GIN",
+              cls: "London Dry Gin",
+              abv: "42% Alc./Vol. (84 Proof)",
+              net: "1 L",
+              bottler:
+                "Produced and bottled by Harbor Spirits Co., Portland, ME",
+              warn: STD.replace(
+                "impairs your ability",
+                "may impair your ability",
+              ),
+              heading: "GOVERNMENT WARNING:",
+              bold: false,
+            },
+            exp: {
+              brand: "HARBOR GIN",
+              classType: "London Dry Gin",
+              abv: "42%",
+              net: "1 L",
+              bottler: "Harbor Spirits Co., Portland, ME",
+              country: "",
+            },
+          },
+        ];
+
+        function wrapLines(ctx, text, maxW) {
+          var out = [],
+            line = "";
+          text.split(" ").forEach(function (w) {
+            var t = line ? line + " " + w : w;
+            if (ctx.measureText(t).width > maxW && line) {
+              out.push(line);
+              line = w;
+            } else line = t;
+          });
+          if (line) out.push(line);
+          return out;
+        }
+
+        function drawLabel(s, fileName) {
+          return new Promise(function (resolve) {
+            var W = 900,
+              H = 1280,
+              cv = document.createElement("canvas");
+            cv.width = W;
+            cv.height = H;
+            var x = cv.getContext("2d"),
+              ink = "#2a1d12",
+              cx = W / 2,
+              y;
+            x.fillStyle = "#e9e0c8";
+            x.fillRect(0, 0, W, H);
+            x.strokeStyle = ink;
+            x.lineWidth = 6;
+            x.strokeRect(34, 34, W - 68, H - 68);
+            x.lineWidth = 2;
+            x.strokeRect(48, 48, W - 96, H - 96);
+            x.fillStyle = ink;
+            x.textAlign = "center";
+            x.textBaseline = "alphabetic";
+
+            x.font = "bold 76px Georgia, serif";
+            y = 200;
+            wrapLines(x, s.brand, 720).forEach(function (l) {
+              x.fillText(l, cx, y);
+              y += 88;
+            });
+            x.fillRect(cx - 120, y - 40, 240, 4);
+            x.font = "italic 36px Georgia, serif";
+            y += 24;
+            wrapLines(x, s.cls, 720).forEach(function (l) {
+              x.fillText(l, cx, y);
+              y += 46;
+            });
+
+            y += 40;
+            x.font = "bold 42px Arial, sans-serif";
+            x.fillText(s.abv, cx, y);
+            y += 58;
+            x.font = "34px Arial, sans-serif";
+            x.fillText(s.net, cx, y);
+            y += 70;
+            x.font = "26px Arial, sans-serif";
+            wrapLines(x, s.bottler, 700).forEach(function (l) {
+              x.fillText(l, cx, y);
+              y += 34;
+            });
+
+            // warning: heading in its own weight, body in regular, wrapped together
+            x.textAlign = "left";
+            y = Math.max(y + 60, 860);
+            var hw = s.heading.split(" "),
+              bw = s.warn.slice(s.heading.length).trim().split(" ");
+            var items = hw
+              .map(function (w) {
+                return {
+                  w: w,
+                  f: (s.bold ? "bold " : "") + "21px Arial, sans-serif",
+                };
+              })
+              .concat(
+                bw.map(function (w) {
+                  return { w: w, f: "21px Arial, sans-serif" };
+                }),
+              );
+            var lx = 90,
+              maxX = W - 90,
+              px = lx;
+            items.forEach(function (it) {
+              x.font = it.f;
+              var w = x.measureText(it.w + " ").width;
+              if (px + w > maxX + 6) {
+                px = lx;
+                y += 30;
+              }
+              x.fillText(it.w, px, y);
+              px += w;
+            });
+            cv.toBlob(function (b) {
+              resolve(new File([b], fileName, { type: "image/png" }));
+            }, "image/png");
+          });
+        }
+
+        // ---------------------------------------------------------------- one label
+        var one = {
+          file: null,
+          url: null,
+          ctl: null,
+          timer: null,
+          busy: false,
+        };
+        var FIELDS = [
+          ["brand", "f-brand"],
+          ["classType", "f-class"],
+          ["abv", "f-abv"],
+          ["net", "f-net"],
+          ["bottler", "f-bottler"],
+          ["country", "f-country"],
+        ];
+
+        function readForm() {
+          var e = {};
+          FIELDS.forEach(function (f) {
+            e[f[0]] = $(f[1]).value;
+          });
+          if (!$("f-imported").checked) e.country = "";
+          return e;
+        }
+        function fillForm(e) {
+          FIELDS.forEach(function (f) {
+            $(f[1]).value = e[f[0]] || "";
+          });
+          $("f-imported").checked = !!e.country;
+          $("country-field").hidden = !e.country;
+        }
+        function missingRequired(e) {
+          var m = [];
+          if (!e.brand.trim())
+            m.push([
+              "e-brand",
+              "f-brand",
+              "Enter the brand name from the application.",
+            ]);
+          if (!e.classType.trim())
+            m.push(["e-class", "f-class", "Enter the class or type."]);
+          if (!e.abv.trim())
+            m.push(["e-abv", "f-abv", "Enter the alcohol content."]);
+          if (!e.net.trim())
+            m.push(["e-net", "f-net", "Enter the net contents."]);
+          return m;
+        }
+        function clearErrors() {
+          ["brand", "class", "abv", "net"].forEach(function (k) {
+            $("e-" + k).textContent = "";
+            $("f-" + k).removeAttribute("aria-invalid");
+          });
+        }
+
+        function setOneFile(file, name) {
+          if (one.url) URL.revokeObjectURL(one.url);
+          one.file = file;
+          one.url = URL.createObjectURL(file);
+          $("preview").src = one.url;
+          $("file-name").textContent = name || file.name;
+          $("check-one").disabled = false;
+        }
+
+        function setBusy(on) {
+          one.busy = on;
+          var b = $("check-one");
+          b.textContent = on ? "Stop" : "Check label";
+          b.classList.toggle("btn-secondary", on);
+          b.classList.toggle("btn-primary", !on);
+          if (on) {
+            var t0 = performance.now();
+            one.timer = setInterval(function () {
+              $("status-one").textContent =
+                "Reading the label… " +
+                ((performance.now() - t0) / 1000).toFixed(1) +
+                " s";
+            }, 100);
+          } else {
+            clearInterval(one.timer);
+          }
+        }
+
+        async function runOne() {
+          if (one.busy) {
+            if (one.ctl) one.ctl.abort();
+            return;
+          }
+          clearErrors();
+          var problem = checkFile(one.file);
+          if (problem) {
+            $("status-one").textContent = problem;
+            return;
+          }
+          var exp = readForm(),
+            miss = missingRequired(exp);
+          if (miss.length) {
+            miss.forEach(function (m) {
+              $(m[0]).textContent = m[2];
+              $(m[1]).setAttribute("aria-invalid", "true");
+            });
+            $(miss[0][1]).focus();
+            $("status-one").textContent = "";
+            return;
+          }
+          one.ctl = new AbortController();
+          setBusy(true);
+          var t0 = performance.now();
+          try {
+            var ex = await extract(one.file, one.ctl.signal);
+            var res = LM.verify(exp, ex);
+            res.ms = performance.now() - t0;
+            renderResult($("result-one"), res);
+            $("status-one").textContent = "";
+          } catch (e) {
+            $("status-one").textContent = errorCopy(e);
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        // ---------------------------------------------------------------- batch
+        var batch = {
+          rows: [],
+          seq: 0,
+          running: false,
+          ctl: null,
+          filter: "all",
+        };
+        var BFIELDS = [
+          ["brand", "Brand name"],
+          ["classType", "Class / type"],
+          ["abv", "Alcohol content"],
+          ["net", "Net contents"],
+          ["bottler", "Bottler / producer"],
+          ["country", "Country (imports only)"],
+        ];
+
+        function addRow(file, exp) {
+          var row = {
+            id: ++batch.seq,
+            file: file,
+            url: URL.createObjectURL(file),
+            exp: Object.assign(
+              {
+                brand: "",
+                classType: "",
+                abv: "",
+                net: "",
+                bottler: "",
+                country: "",
+              },
+              exp || {},
+            ),
+            status: "idle",
+            res: null,
+            err: "",
+            dirty: false,
+            els: {},
+          };
+          batch.rows.push(row);
+          return row;
+        }
+
+        function rowState(row) {
+          if (row.status === "running") return "running";
+          if (row.status === "error") return "error";
+          if (row.status === "done") return row.res.verdict;
+          return "idle";
+        }
+
+        function buildRow(row) {
+          var inputs = h("div", { class: "binputs" });
+          BFIELDS.forEach(function (f) {
+            var id = "r" + row.id + "-" + f[0];
+            var input = h("input", {
+              type: "text",
+              id: id,
+              value: row.exp[f[0]] || "",
+            });
+            input.addEventListener("input", function () {
+              row.exp[f[0]] = input.value;
+              if (row.status === "done") row.dirty = true;
+            });
+            inputs.appendChild(
+              h(
+                "div",
+                { class: "field" },
+                h("label", { for: id, text: f[1] }),
+                input,
+              ),
+            );
+          });
+          var statusEl = h("div"),
+            detail = h("div", { class: "bdetail", hidden: true });
+          var toggle = h("button", {
+            class: "btn btn-quiet",
+            type: "button",
+            hidden: true,
+            text: "Details",
+            "aria-expanded": "false",
+          });
+          toggle.addEventListener("click", function () {
+            detail.hidden = !detail.hidden;
+            toggle.setAttribute("aria-expanded", String(!detail.hidden));
+            toggle.textContent = detail.hidden ? "Details" : "Hide details";
+          });
+          var remove = h("button", {
+            class: "btn btn-quiet",
+            type: "button",
+            text: "Remove",
+          });
+          remove.addEventListener("click", function () {
+            URL.revokeObjectURL(row.url);
+            batch.rows = batch.rows.filter(function (r) {
+              return r !== row;
+            });
+            row.el.remove();
+            refreshBatch();
+          });
+          row.els = { status: statusEl, detail: detail, toggle: toggle };
+          row.el = h(
+            "div",
+            { class: "brow" },
+            h(
+              "div",
+              { class: "bthumb" },
+              h("img", { src: row.url, alt: "Label " + row.file.name }),
+            ),
+            h(
+              "div",
+              null,
+              h("div", { class: "bfile", text: row.file.name }),
+              inputs,
+            ),
+            h("div", { class: "bstat" }, statusEl, toggle, remove),
+            detail,
+          );
+          paintRow(row);
+          return row.el;
+        }
+
+        function paintRow(row) {
+          var s = rowState(row),
+            el = row.els.status;
+          el.replaceChildren();
+          if (s === "idle")
+            el.appendChild(
+              h("span", { class: "hint", text: "Not checked yet" }),
+            );
+          else if (s === "running")
+            el.appendChild(h("span", { class: "hint", text: "Reading…" }));
+          else if (s === "error")
+            el.appendChild(
+              h(
+                "span",
+                { class: "chip chip-bad" },
+                h("span", {
+                  class: "chip-icon",
+                  "aria-hidden": "true",
+                  text: "✕",
+                }),
+                row.err || "Error",
+              ),
+            );
+          else {
+            var v = VERDICT[s];
+            el.appendChild(
+              h(
+                "span",
+                { class: "chip chip-" + v.cls },
+                h("span", {
+                  class: "chip-icon",
+                  "aria-hidden": "true",
+                  text: v.icon,
+                }),
+                v.title.replace(" the application", ""),
+              ),
+            );
+            el.appendChild(
+              h("div", {
+                class: "note",
+                text:
+                  row.res.counts.fail +
+                  " problem" +
+                  (row.res.counts.fail === 1 ? "" : "s") +
+                  ", " +
+                  row.res.counts.review +
+                  " to check",
+              }),
+            );
+          }
+          row.els.toggle.hidden = s !== "done";
+          if (s === "done") renderResult(row.els.detail, row.res);
+          applyFilter();
+        }
+
+        function renderBatch() {
+          var box = $("brows");
+          box.replaceChildren();
+          if (!batch.rows.length) {
+            box.appendChild(
+              h("div", {
+                class: "empty",
+                text: "No labels yet. Choose images or add the sample labels to see how a batch works.",
+              }),
+            );
+          } else
+            batch.rows.forEach(function (r) {
+              box.appendChild(buildRow(r));
+            });
+          refreshBatch();
+        }
+
+        function counts() {
+          var c = {
+            all: batch.rows.length,
+            match: 0,
+            review: 0,
+            mismatch: 0,
+            error: 0,
+          };
+          batch.rows.forEach(function (r) {
+            var s = rowState(r);
+            if (c[s] !== undefined) c[s]++;
+          });
+          return c;
+        }
+
+        function refreshBatch() {
+          var c = counts(),
+            any = c.match + c.review + c.mismatch + c.error > 0;
+          $("check-batch").disabled = !batch.rows.length || batch.running;
+          $("summary").hidden = !any;
+          var f = $("filters");
+          f.replaceChildren();
+          [
+            ["all", "All"],
+            ["mismatch", "Doesn't match"],
+            ["review", "Needs a look"],
+            ["match", "Matches"],
+            ["error", "Errors"],
+          ].forEach(function (p) {
+            if (p[0] === "error" && !c.error) return;
+            var b = h("button", {
+              class: "filter",
+              type: "button",
+              "aria-pressed": String(batch.filter === p[0]),
+              text: p[1] + " (" + c[p[0]] + ")",
+            });
+            b.addEventListener("click", function () {
+              batch.filter = p[0];
+              refreshBatch();
+            });
+            f.appendChild(b);
+          });
+          applyFilter();
+        }
+
+        function applyFilter() {
+          batch.rows.forEach(function (r) {
+            if (r.el)
+              r.el.hidden =
+                batch.filter !== "all" && rowState(r) !== batch.filter;
+          });
+        }
+
+        async function runBatch() {
+          var todo = batch.rows.filter(function (r) {
+            return r.status !== "done" || r.dirty;
+          });
+          if (!todo.length) {
+            $("progress").textContent =
+              "Everything is already checked. Change a row to check it again.";
+            return;
+          }
+          batch.running = true;
+          batch.ctl = new AbortController();
+          $("check-batch").disabled = true;
+          $("stop-batch").hidden = false;
+          var total = todo.length,
+            finished = 0,
+            next = 0,
+            halted = false,
+            t0 = performance.now();
+          function tick() {
+            $("progress").textContent =
+              "Checked " +
+              finished +
+              " of " +
+              total +
+              " · " +
+              ((performance.now() - t0) / 1000).toFixed(0) +
+              " s";
+          }
+          tick();
+
+          async function worker() {
+            while (!halted && !batch.ctl.signal.aborted && next < todo.length) {
+              var row = todo[next++];
+              var problem = checkFile(row.file),
+                miss = missingRequired(row.exp);
+              if (problem || miss.length) {
+                row.status = "error";
+                row.err =
+                  problem ||
+                  "Fill in brand, class, alcohol content and net contents.";
+              } else {
+                row.status = "running";
+                paintRow(row);
+                var rt0 = performance.now();
+                try {
+                  var ex = await extract(row.file, batch.ctl.signal);
+                  row.res = LM.verify(Object.assign({}, row.exp), ex);
+                  row.res.ms = performance.now() - rt0;
+                  row.status = "done";
+                  row.dirty = false;
+                } catch (e) {
+                  if (e && e.code === "cancelled") {
+                    row.status = "idle";
+                    paintRow(row);
+                    return;
+                  }
+                  row.status = "error";
+                  row.err = errorCopy(e);
+                  if (
+                    e &&
+                    (e.code === "rate_limited" ||
+                      e.code === "not_granted" ||
+                      e.code === "no_reader" ||
+                      e.code === "sampling_disabled")
+                  )
+                    halted = true;
+                }
+              }
+              finished++;
+              paintRow(row);
+              refreshBatch();
+              tick();
             }
           }
-          finished++;
-          paintRow(row);
+          await Promise.all([worker(), worker()]);
+          batch.running = false;
+          $("stop-batch").hidden = true;
+          var c = counts();
+          $("progress").textContent =
+            (batch.ctl.signal.aborted
+              ? "Stopped. "
+              : halted
+                ? "Paused because of an error. "
+                : "Done. ") +
+            finished +
+            " checked in " +
+            ((performance.now() - t0) / 1000).toFixed(0) +
+            " s · " +
+            c.match +
+            " match, " +
+            c.review +
+            " to look at, " +
+            c.mismatch +
+            " don't match.";
           refreshBatch();
-          tick();
         }
-      }
-      await Promise.all([worker(), worker()]);
-      batch.running = false;
-      $("stop-batch").hidden = true;
-      var c = counts();
-      $("progress").textContent =
-        (batch.ctl.signal.aborted
-          ? "Stopped. "
-          : halted
-            ? "Paused because of an error. "
-            : "Done. ") +
-        finished +
-        " checked in " +
-        ((performance.now() - t0) / 1000).toFixed(0) +
-        " s · " +
-        c.match +
-        " match, " +
-        c.review +
-        " to look at, " +
-        c.mismatch +
-        " don't match.";
-      refreshBatch();
-    }
 
-    // CSV
-    function parseCsv(text) {
-      var rows = [],
-        row = [],
-        cur = "",
-        q = false,
-        i,
-        ch;
-      for (i = 0; i < text.length; i++) {
-        ch = text[i];
-        if (q) {
-          if (ch === '"') {
-            if (text[i + 1] === '"') {
-              cur += '"';
-              i++;
-            } else q = false;
-          } else cur += ch;
-        } else if (ch === '"') q = true;
-        else if (ch === ",") {
-          row.push(cur);
-          cur = "";
-        } else if (ch === "\n" || ch === "\r") {
-          if (ch === "\r" && text[i + 1] === "\n") i++;
-          row.push(cur);
-          rows.push(row);
-          row = [];
-          cur = "";
-        } else cur += ch;
-      }
-      if (cur.length || row.length) {
-        row.push(cur);
-        rows.push(row);
-      }
-      return rows.filter(function (r) {
-        return r.some(function (c) {
-          return c.trim();
-        });
-      });
-    }
-    var HEADER_MAP = {
-      file: "file",
-      filename: "file",
-      brand: "brand",
-      brandname: "brand",
-      class: "classType",
-      classtype: "classType",
-      type: "classType",
-      abv: "abv",
-      alcohol: "abv",
-      alcoholcontent: "abv",
-      net: "net",
-      netcontents: "net",
-      bottler: "bottler",
-      producer: "bottler",
-      country: "country",
-      countryoforigin: "country",
-    };
-    var CSV_EXAMPLE =
-      'file,brand,class,abv,net,bottler,country\nsample-old-tom.png,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45%,750 mL,"Old Tom Distillery, Bardstown, KY",\n';
-
-    function applyCsv() {
-      var rows = parseCsv($("csv").value);
-      if (!rows.length) {
-        $("csv-msg").textContent = "Paste some CSV first.";
-        return;
-      }
-      var order = [
-        "file",
-        "brand",
-        "classType",
-        "abv",
-        "net",
-        "bottler",
-        "country",
-      ];
-      var head = rows[0].map(function (c) {
-        return HEADER_MAP[c.toLowerCase().replace(/[^a-z]/g, "")];
-      });
-      if (head.indexOf("file") !== -1 && head.indexOf("brand") !== -1)
-        rows.shift();
-      else head = order;
-      var byName = {};
-      batch.rows.forEach(function (r) {
-        byName[r.file.name.toLowerCase()] = r;
-      });
-      var matched = 0,
-        lost = [];
-      rows.forEach(function (cells) {
-        var rec = {};
-        head.forEach(function (k, i) {
-          if (k) rec[k] = (cells[i] || "").trim();
-        });
-        var name = (rec.file || "").split(/[\\/]/).pop().toLowerCase();
-        var row = byName[name];
-        if (!row) {
-          lost.push(rec.file || "(blank)");
-          return;
-        }
-        ["brand", "classType", "abv", "net", "bottler", "country"].forEach(
-          function (k) {
-            if (rec[k] !== undefined) row.exp[k] = rec[k];
-          },
-        );
-        if (row.status === "done") row.dirty = true;
-        matched++;
-      });
-      renderBatch();
-      $("csv-msg").textContent =
-        matched +
-        " row" +
-        (matched === 1 ? "" : "s") +
-        " filled." +
-        (lost.length
-          ? " No image found for: " +
-            lost.slice(0, 5).join(", ") +
-            (lost.length > 5 ? " and " + (lost.length - 5) + " more" : "") +
-            "."
-          : "");
-    }
-
-    function copyText(text, msgEl, done) {
-      function fallback() {
-        var ta = h("textarea", {
-          "aria-hidden": "true",
-          style: "position:fixed;opacity:0",
-        });
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        var ok = false;
-        try {
-          ok = document.execCommand("copy");
-        } catch (e) {}
-        ta.remove();
-        msgEl.textContent = ok
-          ? done
-          : "Copying is blocked here. Select the text in the box and copy it yourself.";
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(text).then(function () {
-          msgEl.textContent = done;
-        }, fallback);
-      else fallback();
-    }
-
-    function resultsCsv() {
-      function q(s) {
-        return '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"';
-      }
-      var out = ["file,result,problems,to_check"];
-      batch.rows.forEach(function (r) {
-        var s = rowState(r),
-          probs = [],
-          rev = [];
-        if (r.status === "done") {
-          r.res.fields.forEach(function (f) {
-            if (f.status === "fail") probs.push(f.label);
-            if (f.status === "review") rev.push(f.label);
-          });
-          r.res.warning.checks.forEach(function (c) {
-            if (c.status === "fail") probs.push("Warning: " + c.label);
-            if (c.status === "review") rev.push("Warning: " + c.label);
+        // CSV
+        function parseCsv(text) {
+          var rows = [],
+            row = [],
+            cur = "",
+            q = false,
+            i,
+            ch;
+          for (i = 0; i < text.length; i++) {
+            ch = text[i];
+            if (q) {
+              if (ch === '"') {
+                if (text[i + 1] === '"') {
+                  cur += '"';
+                  i++;
+                } else q = false;
+              } else cur += ch;
+            } else if (ch === '"') q = true;
+            else if (ch === ",") {
+              row.push(cur);
+              cur = "";
+            } else if (ch === "\n" || ch === "\r") {
+              if (ch === "\r" && text[i + 1] === "\n") i++;
+              row.push(cur);
+              rows.push(row);
+              row = [];
+              cur = "";
+            } else cur += ch;
+          }
+          if (cur.length || row.length) {
+            row.push(cur);
+            rows.push(row);
+          }
+          return rows.filter(function (r) {
+            return r.some(function (c) {
+              return c.trim();
+            });
           });
         }
-        out.push(
-          [
-            q(r.file.name),
-            q(
-              s === "error"
-                ? "error: " + r.err
-                : s === "idle"
-                  ? "not checked"
-                  : s,
-            ),
-            q(probs.join("; ")),
-            q(rev.join("; ")),
-          ].join(","),
-        );
-      });
-      return out.join("\n");
-    }
+        var HEADER_MAP = {
+          file: "file",
+          filename: "file",
+          brand: "brand",
+          brandname: "brand",
+          class: "classType",
+          classtype: "classType",
+          type: "classType",
+          abv: "abv",
+          alcohol: "abv",
+          alcoholcontent: "abv",
+          net: "net",
+          netcontents: "net",
+          bottler: "bottler",
+          producer: "bottler",
+          country: "country",
+          countryoforigin: "country",
+        };
+        var CSV_EXAMPLE =
+          'file,brand,class,abv,net,bottler,country\nsample-old-tom.png,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45%,750 mL,"Old Tom Distillery, Bardstown, KY",\n';
 
-    // ---------------------------------------------------------------- wiring
-    function selectTab(which) {
-      var isOne = which === "one";
-      $("tab-one").setAttribute("aria-selected", String(isOne));
-      $("tab-one").tabIndex = isOne ? 0 : -1;
-      $("tab-batch").setAttribute("aria-selected", String(!isOne));
-      $("tab-batch").tabIndex = isOne ? -1 : 0;
-      $("panel-one").hidden = !isOne;
-      $("panel-batch").hidden = isOne;
-      $("panel-one").style.display = isOne ? "flex" : "none";
-      $("panel-batch").style.display = isOne ? "none" : "flex";
-    }
-    $("tab-one").addEventListener("click", function () {
-      selectTab("one");
-    });
-    $("tab-batch").addEventListener("click", function () {
-      selectTab("batch");
-    });
-    [$("tab-one"), $("tab-batch")].forEach(function (t) {
-      t.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-          var to = t === $("tab-one") ? "batch" : "one";
-          selectTab(to);
-          $("tab-" + to).focus();
+        function applyCsv() {
+          var rows = parseCsv($("csv").value);
+          if (!rows.length) {
+            $("csv-msg").textContent = "Paste some CSV first.";
+            return;
+          }
+          var order = [
+            "file",
+            "brand",
+            "classType",
+            "abv",
+            "net",
+            "bottler",
+            "country",
+          ];
+          var head = rows[0].map(function (c) {
+            return HEADER_MAP[c.toLowerCase().replace(/[^a-z]/g, "")];
+          });
+          if (head.indexOf("file") !== -1 && head.indexOf("brand") !== -1)
+            rows.shift();
+          else head = order;
+          var byName = {};
+          batch.rows.forEach(function (r) {
+            byName[r.file.name.toLowerCase()] = r;
+          });
+          var matched = 0,
+            lost = [];
+          rows.forEach(function (cells) {
+            var rec = {};
+            head.forEach(function (k, i) {
+              if (k) rec[k] = (cells[i] || "").trim();
+            });
+            var name = (rec.file || "").split(/[\\/]/).pop().toLowerCase();
+            var row = byName[name];
+            if (!row) {
+              lost.push(rec.file || "(blank)");
+              return;
+            }
+            ["brand", "classType", "abv", "net", "bottler", "country"].forEach(
+              function (k) {
+                if (rec[k] !== undefined) row.exp[k] = rec[k];
+              },
+            );
+            if (row.status === "done") row.dirty = true;
+            matched++;
+          });
+          renderBatch();
+          $("csv-msg").textContent =
+            matched +
+            " row" +
+            (matched === 1 ? "" : "s") +
+            " filled." +
+            (lost.length
+              ? " No image found for: " +
+                lost.slice(0, 5).join(", ") +
+                (lost.length > 5 ? " and " + (lost.length - 5) + " more" : "") +
+                "."
+              : "");
         }
-      });
-    });
-    selectTab("one");
 
-    function dropZone(el, onFiles) {
-      ["dragenter", "dragover"].forEach(function (n) {
-        el.addEventListener(n, function (e) {
-          e.preventDefault();
-          el.classList.add("over");
+        function copyText(text, msgEl, done) {
+          function fallback() {
+            var ta = h("textarea", {
+              "aria-hidden": "true",
+              style: "position:fixed;opacity:0",
+            });
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            var ok = false;
+            try {
+              ok = document.execCommand("copy");
+            } catch (e) {}
+            ta.remove();
+            msgEl.textContent = ok
+              ? done
+              : "Copying is blocked here. Select the text in the box and copy it yourself.";
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText)
+            navigator.clipboard.writeText(text).then(function () {
+              msgEl.textContent = done;
+            }, fallback);
+          else fallback();
+        }
+
+        function resultsCsv() {
+          function q(s) {
+            return '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"';
+          }
+          var out = ["file,result,problems,to_check"];
+          batch.rows.forEach(function (r) {
+            var s = rowState(r),
+              probs = [],
+              rev = [];
+            if (r.status === "done") {
+              r.res.fields.forEach(function (f) {
+                if (f.status === "fail") probs.push(f.label);
+                if (f.status === "review") rev.push(f.label);
+              });
+              r.res.warning.checks.forEach(function (c) {
+                if (c.status === "fail") probs.push("Warning: " + c.label);
+                if (c.status === "review") rev.push("Warning: " + c.label);
+              });
+            }
+            out.push(
+              [
+                q(r.file.name),
+                q(
+                  s === "error"
+                    ? "error: " + r.err
+                    : s === "idle"
+                      ? "not checked"
+                      : s,
+                ),
+                q(probs.join("; ")),
+                q(rev.join("; ")),
+              ].join(","),
+            );
+          });
+          return out.join("\n");
+        }
+
+        // ---------------------------------------------------------------- wiring
+        function selectTab(which) {
+          var isOne = which === "one";
+          $("tab-one").setAttribute("aria-selected", String(isOne));
+          $("tab-one").tabIndex = isOne ? 0 : -1;
+          $("tab-batch").setAttribute("aria-selected", String(!isOne));
+          $("tab-batch").tabIndex = isOne ? -1 : 0;
+          $("panel-one").hidden = !isOne;
+          $("panel-batch").hidden = isOne;
+          $("panel-one").style.display = isOne ? "flex" : "none";
+          $("panel-batch").style.display = isOne ? "none" : "flex";
+        }
+        $("tab-one").addEventListener("click", function () {
+          selectTab("one");
         });
-      });
-      ["dragleave", "drop"].forEach(function (n) {
-        el.addEventListener(n, function (e) {
-          e.preventDefault();
-          el.classList.remove("over");
+        $("tab-batch").addEventListener("click", function () {
+          selectTab("batch");
         });
-      });
-      el.addEventListener("drop", function (e) {
-        if (e.dataTransfer && e.dataTransfer.files.length)
-          onFiles(Array.prototype.slice.call(e.dataTransfer.files));
-      });
-    }
+        [$("tab-one"), $("tab-batch")].forEach(function (t) {
+          t.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              var to = t === $("tab-one") ? "batch" : "one";
+              selectTab(to);
+              $("tab-" + to).focus();
+            }
+          });
+        });
+        selectTab("one");
 
-    function chooseOne(files) {
-      var f = files[0],
-        problem = checkFile(f);
-      if (problem) {
-        $("status-one").textContent = problem;
-        return;
-      }
-      setOneFile(f);
-      $("sample-note").hidden = true;
-      $("sample-pick").value = "";
-      $("status-one").textContent = "";
-      $("result-one").replaceChildren(
-        h("div", {
-          class: "empty",
-          text: "Fill in the application details, then choose Check label.",
-        }),
-      );
-    }
-    $("file-one").addEventListener("change", function (e) {
-      if (e.target.files.length) chooseOne([e.target.files[0]]);
-      e.target.value = "";
-    });
-    dropZone($("drop-one"), chooseOne);
+        function dropZone(el, onFiles) {
+          ["dragenter", "dragover"].forEach(function (n) {
+            el.addEventListener(n, function (e) {
+              e.preventDefault();
+              el.classList.add("over");
+            });
+          });
+          ["dragleave", "drop"].forEach(function (n) {
+            el.addEventListener(n, function (e) {
+              e.preventDefault();
+              el.classList.remove("over");
+            });
+          });
+          el.addEventListener("drop", function (e) {
+            if (e.dataTransfer && e.dataTransfer.files.length)
+              onFiles(Array.prototype.slice.call(e.dataTransfer.files));
+          });
+        }
 
-    $("f-imported").addEventListener("change", function () {
-      $("country-field").hidden = !$("f-imported").checked;
-    });
-    $("check-one").addEventListener("click", runOne);
-    $("form-one").addEventListener("submit", function (e) {
-      e.preventDefault();
-    });
+        function chooseOne(files) {
+          var f = files[0],
+            problem = checkFile(f);
+          if (problem) {
+            $("status-one").textContent = problem;
+            return;
+          }
+          setOneFile(f);
+          $("sample-note").hidden = true;
+          $("sample-pick").value = "";
+          $("status-one").textContent = "";
+          $("result-one").replaceChildren(
+            h("div", {
+              class: "empty",
+              text: "Fill in the application details, then choose Check label.",
+            }),
+          );
+        }
+        $("file-one").addEventListener("change", function (e) {
+          if (e.target.files.length) chooseOne([e.target.files[0]]);
+          e.target.value = "";
+        });
+        dropZone($("drop-one"), chooseOne);
 
-    var pick = $("sample-pick");
-    pick.appendChild(h("option", { value: "", text: "Choose a sample…" }));
-    SAMPLES.forEach(function (s) {
-      pick.appendChild(h("option", { value: s.id, text: s.title }));
-    });
-    async function loadSample(id) {
-      var s = SAMPLES.filter(function (x) {
-        return x.id === id;
-      })[0];
-      if (!s) return;
-      var f = await drawLabel(s.label, s.file);
-      setOneFile(f, s.file);
-      fillForm(s.exp);
-      clearErrors();
-      $("sample-note").hidden = false;
-      $("status-one").textContent = "";
-      $("result-one").replaceChildren(
-        h("div", {
-          class: "empty",
-          text: "Choose Check label to see the result for this sample.",
-        }),
-      );
-    }
-    pick.addEventListener("change", function () {
-      if (pick.value) loadSample(pick.value);
-    });
+        $("f-imported").addEventListener("change", function () {
+          $("country-field").hidden = !$("f-imported").checked;
+        });
+        $("check-one").addEventListener("click", runOne);
+        $("form-one").addEventListener("submit", function (e) {
+          e.preventDefault();
+        });
 
-    function addBatchFiles(files) {
-      var bad = 0;
-      files.forEach(function (f) {
-        if (checkFile(f)) bad++;
-        else addRow(f);
-      });
-      renderBatch();
-      $("progress").textContent = bad
-        ? bad +
-          " file" +
-          (bad === 1 ? " was" : "s were") +
-          " skipped because they are not JPG, PNG, WebP or GIF images under 20 MB."
-        : "";
-    }
-    $("file-batch").addEventListener("change", function (e) {
-      addBatchFiles(Array.prototype.slice.call(e.target.files));
-      e.target.value = "";
-    });
-    dropZone($("drop-batch"), addBatchFiles);
-    $("batch-samples").addEventListener("click", async function () {
-      var btn = $("batch-samples");
-      btn.disabled = true;
-      for (var i = 0; i < SAMPLES.length; i++)
-        addRow(
-          await drawLabel(SAMPLES[i].label, SAMPLES[i].file),
-          SAMPLES[i].exp,
-        );
-      btn.disabled = false;
-      renderBatch();
-      $("progress").textContent =
-        SAMPLES.length + " sample labels added. Choose Check all labels.";
-    });
-    $("batch-clear").addEventListener("click", function () {
-      if (batch.running) return;
-      batch.rows.forEach(function (r) {
-        URL.revokeObjectURL(r.url);
-      });
-      batch.rows = [];
-      batch.filter = "all";
-      renderBatch();
-      $("progress").textContent = "";
-    });
-    $("check-batch").addEventListener("click", runBatch);
-    $("stop-batch").addEventListener("click", function () {
-      if (batch.ctl) batch.ctl.abort();
-    });
-    $("csv-apply").addEventListener("click", applyCsv);
-    $("csv-template").addEventListener("click", function () {
-      copyText(
-        CSV_EXAMPLE,
-        $("csv-msg"),
-        "Example copied. Paste it above and edit.",
-      );
-    });
-    $("copy-results").addEventListener("click", function () {
-      copyText(resultsCsv(), $("copy-msg"), "Results copied.");
-    });
+        var pick = $("sample-pick");
+        pick.appendChild(h("option", { value: "", text: "Choose a sample…" }));
+        SAMPLES.forEach(function (s) {
+          pick.appendChild(h("option", { value: s.id, text: s.title }));
+        });
+        async function loadSample(id) {
+          var s = SAMPLES.filter(function (x) {
+            return x.id === id;
+          })[0];
+          if (!s) return;
+          var f = await drawLabel(s.label, s.file);
+          setOneFile(f, s.file);
+          fillForm(s.exp);
+          clearErrors();
+          $("sample-note").hidden = false;
+          $("status-one").textContent = "";
+          $("result-one").replaceChildren(
+            h("div", {
+              class: "empty",
+              text: "Choose Check label to see the result for this sample.",
+            }),
+          );
+        }
+        pick.addEventListener("change", function () {
+          if (pick.value) loadSample(pick.value);
+        });
 
-    // Start in a working state: the first sample is loaded and ready to check.
-    $("check-one").disabled = true;
-    loadSample("old-tom");
-  })();
-</script>
-</body>
+        function addBatchFiles(files) {
+          var bad = 0;
+          files.forEach(function (f) {
+            if (checkFile(f)) bad++;
+            else addRow(f);
+          });
+          renderBatch();
+          $("progress").textContent = bad
+            ? bad +
+              " file" +
+              (bad === 1 ? " was" : "s were") +
+              " skipped because they are not JPG, PNG, WebP or GIF images under 20 MB."
+            : "";
+        }
+        $("file-batch").addEventListener("change", function (e) {
+          addBatchFiles(Array.prototype.slice.call(e.target.files));
+          e.target.value = "";
+        });
+        dropZone($("drop-batch"), addBatchFiles);
+        $("batch-samples").addEventListener("click", async function () {
+          var btn = $("batch-samples");
+          btn.disabled = true;
+          for (var i = 0; i < SAMPLES.length; i++)
+            addRow(
+              await drawLabel(SAMPLES[i].label, SAMPLES[i].file),
+              SAMPLES[i].exp,
+            );
+          btn.disabled = false;
+          renderBatch();
+          $("progress").textContent =
+            SAMPLES.length + " sample labels added. Choose Check all labels.";
+        });
+        $("batch-clear").addEventListener("click", function () {
+          if (batch.running) return;
+          batch.rows.forEach(function (r) {
+            URL.revokeObjectURL(r.url);
+          });
+          batch.rows = [];
+          batch.filter = "all";
+          renderBatch();
+          $("progress").textContent = "";
+        });
+        $("check-batch").addEventListener("click", runBatch);
+        $("stop-batch").addEventListener("click", function () {
+          if (batch.ctl) batch.ctl.abort();
+        });
+        $("csv-apply").addEventListener("click", applyCsv);
+        $("csv-template").addEventListener("click", function () {
+          copyText(
+            CSV_EXAMPLE,
+            $("csv-msg"),
+            "Example copied. Paste it above and edit.",
+          );
+        });
+        $("copy-results").addEventListener("click", function () {
+          copyText(resultsCsv(), $("copy-msg"), "Results copied.");
+        });
+
+        // Start in a working state: the first sample is loaded and ready to check.
+        $("check-one").disabled = true;
+        loadSample("old-tom");
+      })();
+    </script>
+  </body>
 </html>
