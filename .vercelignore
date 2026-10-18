@@ -1,0 +1,6 @@
+# Local-only Node server, not used on Vercel (static files + api/ functions instead)
+server.js
+*.test.js
+.github
+.env
+.env.example

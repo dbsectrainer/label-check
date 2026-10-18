@@ -21,11 +21,6 @@ const allow = createLimiter(
 const MAX_BODY = 15 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-const HEAD =
-  '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
-  '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-  "<style>body{margin:0}</style></head><body>";
-
 function send(res, status, type, body) {
   const headers = { "content-type": type, "cache-control": "no-store" };
   if (ALLOWED_ORIGIN) {
@@ -170,9 +165,7 @@ http
         res,
         200,
         "text/html; charset=utf-8",
-        HEAD +
-          fs.readFileSync(path.join(__dirname, "index.html"), "utf8") +
-          "</body></html>",
+        fs.readFileSync(path.join(__dirname, "index.html")),
       );
     }
     if (req.method === "GET" && url === "/matcher.js") {
