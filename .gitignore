@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+backend/.venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+
+# OCR model caches / weights (downloaded on first run)
+.paddleocr/
+*.onnx
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+.env
+
+# Playwright MCP test artifacts
+.playwright-mcp/

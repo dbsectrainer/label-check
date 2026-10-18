@@ -1,0 +1,14 @@
+{
+  "name": "label-check",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Compares alcohol label images with application data and checks the government warning word for word.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node matcher.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
